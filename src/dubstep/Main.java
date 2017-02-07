@@ -31,7 +31,7 @@ public class Main {
 			
 			if(query instanceof Select){
 			    			
-				System.out.println("Select statement");
+				//System.out.println("Select statement");
 				
 				Select select = (Select) query;
 				PlainSelect plainSelect = (PlainSelect) select.getSelectBody();
@@ -41,7 +41,7 @@ public class Main {
 				readFromFile(tableName);
 
 			  } else {
-				  System.out.println("Not of type select");
+				  //System.out.println("Not of type select");
 			  }
 			
 		} catch (ParseException e) {
