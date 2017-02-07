@@ -36,7 +36,7 @@ public class Main {
 				Select select = (Select) query;
 				PlainSelect plainSelect = (PlainSelect) select.getSelectBody();
 				String tableName = plainSelect.getFromItem().toString();
-				System.out.println("table: " + tableName);
+				//System.out.println("table: " + tableName);
 				
 				readFromFile(tableName);
 
