@@ -53,7 +53,8 @@ public class Main {
 	
 	public static void readFromFile(String tableName){
 		
-		File file = new File(tableName + ".csv");
+		File file = new File("data/" + tableName + ".csv");
+
 		try {
 			Scanner sc = new Scanner(file);
 			while(sc.hasNext()){
