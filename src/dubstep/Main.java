@@ -65,7 +65,23 @@ public class Main {
 				if (query instanceof Select) {
 					Select select = (Select) query;
 					PlainSelect plainSelect = (PlainSelect) select.getSelectBody();
-					List<SelectItem> selectItems = plainSelect.getSelectItems();
+					List<String> selectItems = new ArrayList<String>();
+					for(SelectItem sitem: plainSelect.getSelectItems()){
+						selectItems.add(sitem.toString());
+					}
+					
+					//System.out.println(selectItems);
+					
+					if(selectItems.get(0).toString().equals("*")){
+						int j = 0;
+						for(String s:columnOrderMapping.keySet()){
+							if(j==0)
+								selectItems.set(0, s);
+							else
+								selectItems.add(j,s);
+							j++;
+						}
+					}
 					List<Integer> selectIndexes = getSelectIndexesfromMap(selectItems, columnOrderMapping);
 
 					Expression e = plainSelect.getWhere();
@@ -108,12 +124,12 @@ public class Main {
 		return null;
 	}
 
-	private static List<Integer> getSelectIndexesfromMap(List<SelectItem> items, Map<String, Integer> map) {
+	private static List<Integer> getSelectIndexesfromMap(List<String> items, Map<String, Integer> map) {
 
 		List<Integer> index = new ArrayList<Integer>();
 
 		for (int i = 0; i < items.size(); i++) {
-			int num = map.get(items.get(i).toString());
+			int num = map.get(items.get(i));
 			index.add(num);
 		}
 		return index;
@@ -147,10 +163,16 @@ public class Main {
 					}
 				};
 
-				PrimitiveValue ret = eval.eval(expr);
-				if ("TRUE".equals(ret.toString())) {
+				if(!(expr == null)){
+					PrimitiveValue ret = eval.eval(expr);
+					if ("TRUE".equals(ret.toString())) {
+						printToConsole(index, values);
+					}	
+				}
+				else{
 					printToConsole(index, values);
 				}
+				
 			}
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
