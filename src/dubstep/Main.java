@@ -215,7 +215,7 @@ public class Main {
 				/* read line from csv file */
 				String newRow = sc.nextLine();
 				/* values array have individual column values from the file */
-				String[] values = newRow.split("|"); // change to | for
+				String[] values = newRow.split("\\|"); // change to | for
 														// submission
 
 				/* where clause evaluation */
