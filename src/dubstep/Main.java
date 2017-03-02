@@ -1,3 +1,4 @@
+
 package dubstep;
 
 import java.io.File;
@@ -36,74 +37,124 @@ import net.sf.jsqlparser.statement.select.SelectItem;
 import net.sf.jsqlparser.statement.select.SelectItemVisitor;
 
 public class Main {
-
-	public static abstract class ArithOp {
-	    public abstract long op(long a, long b);
-	    public abstract double op(double a, double b);
-	  }
 	
+	private class TableData{
+		Map<String, Integer> columnOrderMapping;
+		Map<String, PrimitiveType> columnDataTypeMapping;
+		
+		public Map<String, Integer> getColumnOrderMapping() {
+			return columnOrderMapping;
+		}
+		public void setColumnOrderMapping(Map<String, Integer> columnOrderMapping) {
+			this.columnOrderMapping = columnOrderMapping;
+		}
+		public Map<String, PrimitiveType> getColumnDataTypeMapping() {
+			return columnDataTypeMapping;
+		}
+		public void setColumnDataTypeMapping(Map<String, PrimitiveType> columnDataTypeMapping) {
+			this.columnDataTypeMapping = columnDataTypeMapping;
+		}
+		
+		
+	}
+
 	public static void main(String[] args) throws ParseException, SQLException {
+		Main mainObj = new Main();
+		TableData tableData;
+		Map<String, TableData> tableMapping = new HashMap<String, TableData>();
+		Map<String, Integer> columnOrderMapping = new HashMap<String, Integer>();
+		Map<String, PrimitiveType> columnDataTypeMapping = new HashMap<String, PrimitiveType>();
+		String myTableName = "";
 
 		System.out.print("$>");
 		Scanner sc = new Scanner(System.in);
-		String tableStructure = sc.nextLine();
-		StringReader tableInput = new StringReader(tableStructure);
-		CCJSqlParser tableParser = new CCJSqlParser(tableInput);
-		Statement tableStatement = tableParser.Statement();
-		CreateTable table = (CreateTable) tableStatement;
 
-		String myTableName = table.getTable().getName();
-		List<ColumnDefinition> columnNames = table.getColumnDefinitions();
-
-		Map<String, Integer> columnOrderMapping = new HashMap<String, Integer>();
-		Map<String, PrimitiveType> columnDataTypeMapping = new HashMap<String, PrimitiveType>();
-
-		int i = 0;
-		for (ColumnDefinition col : columnNames) {
-			columnOrderMapping.put(col.getColumnName(), i);
-			columnDataTypeMapping.put(col.getColumnName(), getPrimitiveValue(col.getColDataType()));
-			i++;
-		}
-
-		System.out.print("$>");
 		while (sc.hasNext()) {
+
 			String inputString = sc.nextLine();
 			StringReader input = new StringReader(inputString);
 			CCJSqlParser parser = new CCJSqlParser(input);
+
 			try {
 				Statement query = parser.Statement();
-				if (query instanceof Select) {
+				//Statement tableStatement = parser.Statement();
+				
+
+				if (query instanceof CreateTable) {
+					
+					CreateTable table = (CreateTable) query;
+
+					myTableName = table.getTable().getName();
+					//System.out.println("tablename: " + myTableName);
+
+					tableData = mainObj.new TableData();
+					
+					List<ColumnDefinition> columnNames = table.getColumnDefinitions();
+
+					int i = 0;
+					for (ColumnDefinition col : columnNames) {
+						columnOrderMapping.put(col.getColumnName(), i);
+						columnDataTypeMapping.put(col.getColumnName(), getPrimitiveValue(col.getColDataType()));
+						i++;
+					}
+					
+					tableData.setColumnDataTypeMapping(columnDataTypeMapping);
+					tableData.setColumnOrderMapping(columnOrderMapping);
+					
+					tableMapping.put(myTableName, tableData);
+					
+				} else if (query instanceof Select) {
+					
+					//System.out.println("select for table:  " + myTableName);
+					
 					Select select = (Select) query;
+					
+					
+					
 					PlainSelect plainSelect = (PlainSelect) select.getSelectBody();
+					
+					myTableName = plainSelect.getFromItem().toString();
+					//System.out.println("select cha table name: " + myTableName);
+					
+					tableData = tableMapping.get(myTableName);
+					columnOrderMapping = tableData.getColumnOrderMapping();
+					columnDataTypeMapping = tableData.getColumnDataTypeMapping();
+					
 					List<String> selectItemsAsString = new ArrayList<String>();
 					List<SelectItem> selectItemsAsObject = new ArrayList<SelectItem>();
+
+					//System.out.println("this table's mapping: " + columnDataTypeMapping + "\n" + columnOrderMapping);
 					
-					for(SelectItem sitem: plainSelect.getSelectItems()){
+					
+					for (SelectItem sitem : plainSelect.getSelectItems()) {
 						selectItemsAsString.add(sitem.toString());
 						selectItemsAsObject.add(sitem);
 					}
 
-//					SelectExpressionItem item = (SelectExpressionItem) plainSelect.getSelectItems().get(0);
-//					System.out.println(item.getExpression());
-
-					//System.out.println("select items: " + selectItemsAsString);
 					
-					if(selectItemsAsString.get(0).toString().equals("*")){
+
+					if (selectItemsAsString.get(0).toString().equals("*")) {
 						int j = 0;
-						for(String s:columnOrderMapping.keySet()){
-							if(j==0)
-								selectItemsAsString.set(0, s);			//update * with the column name
+						for (String s : columnOrderMapping.keySet()) {
+							if (j == 0)
+								selectItemsAsString.set(0, s); // update * with
+																// the column
+																// name
 							else
-								selectItemsAsString.add(j,s);			//add remaining column names 
+								selectItemsAsString.add(j, s); // add remaining
+																// column names
 							j++;
 						}
 					}
-					//List<Integer> selectIndexes = getSelectIndexesfromMap(selectItemsAsString, columnOrderMapping);
+					// List<Integer> selectIndexes =
+					// getSelectIndexesfromMap(selectItemsAsString,
+					// columnOrderMapping);
 					List<Integer> selectIndexes = null;
 
 					Expression e = plainSelect.getWhere();
 
-					readFromFile(myTableName, selectIndexes, selectItemsAsObject, columnOrderMapping, columnDataTypeMapping, e);
+					readFromFile(myTableName, selectIndexes, selectItemsAsObject, columnOrderMapping,
+							columnDataTypeMapping, e);
 
 				} else {
 					// System.out.println("Not of type select");
@@ -152,8 +203,9 @@ public class Main {
 		return index;
 	}
 
-	public static void readFromFile(String tableName, List<Integer> index, List<SelectItem> selectItemsAsObject, Map<String, Integer> columnOrderMapping,
-			Map<String, PrimitiveType> columnDataTypeMapping, Expression expr) throws SQLException {
+	public static void readFromFile(String tableName, List<Integer> index, List<SelectItem> selectItemsAsObject,
+			Map<String, Integer> columnOrderMapping, Map<String, PrimitiveType> columnDataTypeMapping, Expression expr)
+			throws SQLException {
 		 File file = new File("data/" + tableName + ".csv");
 		//File file = new File(tableName + ".csv");
 		try {
@@ -163,92 +215,99 @@ public class Main {
 				/* read line from csv file */
 				String newRow = sc.nextLine();
 				/* values array have individual column values from the file */
-				String[] values = newRow.split("|"); 						// change to | for submission
+				String[] values = newRow.split("|"); // change to | for
+														// submission
 
 				/* where clause evaluation */
 				Eval eval = new Eval() {
 					public PrimitiveValue eval(Column c) {
-						/* get this column's index mapping so that we can get
-						   the value from the values array 
+						/*
+						 * get this column's index mapping so that we can get
+						 * the value from the values array
 						 */
-						//System.out.println("column: " + c);
+						// System.out.println("column: " + c);
 						int idx = columnOrderMapping.get(c.toString());
-						/* get this column's datatype so that we know what to
-						return */
+						/*
+						 * get this column's datatype so that we know what to
+						 * return
+						 */
 						PrimitiveType ptype = columnDataTypeMapping.get(c.toString());
 
 						return getReturnType(ptype, values[idx]);
 					}
 				};
-				
-				//System.out.println("expression: " + expr);
 
-				if(!(expr == null)){
+				// System.out.println("expression: " + expr);
+
+				if (!(expr == null)) {
 					PrimitiveValue ret = eval.eval(expr);
 					if ("TRUE".equals(ret.toString())) {
 						printToConsole(index, values, columnOrderMapping, columnDataTypeMapping, selectItemsAsObject);
-					}	
-				}
-				else{
+					}
+				} else {
 					printToConsole(index, values, columnOrderMapping, columnDataTypeMapping, selectItemsAsObject);
 				}
-				
-				
-				
+
 			}
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
 		}
 	}
 
-	private static void printToConsole(List<Integer> index, String[] values, Map<String, Integer> columnOrderMapping, Map<String, PrimitiveType> columnDataTypeMapping, List<SelectItem> selectItemsAsObject) throws SQLException {
+	private static void printToConsole(List<Integer> index, String[] values, Map<String, Integer> columnOrderMapping,
+			Map<String, PrimitiveType> columnDataTypeMapping, List<SelectItem> selectItemsAsObject)
+			throws SQLException {
 
-		//System.out.println("for print\n" + columnOrderMapping + "\t" + selectItemsAsObject );
-		
+		// System.out.println("for print\n" + columnOrderMapping + "\t" +
+		// selectItemsAsObject );
+
 		StringBuilder sbuilder = new StringBuilder();
-		
-		for(int i = 0; i < selectItemsAsObject.size(); i++){
-			
-			SelectExpressionItem sitem = (SelectExpressionItem)selectItemsAsObject.get(i);
-			//System.out.println(sitem.getExpression() instanceof Addition);
+
+		for (int i = 0; i < selectItemsAsObject.size(); i++) {
+
+			SelectExpressionItem sitem = (SelectExpressionItem) selectItemsAsObject.get(i);
+			// System.out.println(sitem.getExpression() instanceof Addition);
 			Expression selExp = sitem.getExpression();
-			
-			if(selExp instanceof Addition || selExp instanceof Subtraction || selExp instanceof Multiplication || selExp instanceof Division){
-				
+
+			if (selExp instanceof Addition || selExp instanceof Subtraction || selExp instanceof Multiplication
+					|| selExp instanceof Division) {
+
 				Eval eval = new Eval() {
 					public PrimitiveValue eval(Column c) {
-						/* get this column's index mapping so that we can get
-						   the value from the values array 
+						/*
+						 * get this column's index mapping so that we can get
+						 * the value from the values array
 						 */
-						//System.out.println("column: " + c);
+						// System.out.println("column: " + c);
 						int idx = columnOrderMapping.get(c.toString());
-						/* get this column's datatype so that we know what to
-						return */
+						/*
+						 * get this column's datatype so that we know what to
+						 * return
+						 */
 						PrimitiveType ptype = columnDataTypeMapping.get(c.toString());
 
 						return getReturnType(ptype, values[idx]);
 					}
 				};
-				
+
 				PrimitiveValue result = eval.eval(selExp);
 				sbuilder.append(result);
-				//System.out.println("addition result: " + result);
-				
-			}else{
+				// System.out.println("addition result: " + result);
+
+			} else {
 				int idx = columnOrderMapping.get(sitem.toString());
 				sbuilder.append(values[idx]);
 			}
-			
+
 			if (i != selectItemsAsObject.size() - 1)
 				sbuilder.append("|");
 		}
-		
-		
-//		for (int i = 0; i < index.size(); i++) {
-//			sbuilder.append(values[index.get(i)]);
-//			if (i != index.size() - 1)
-//				sbuilder.append("|");
-//		}
+
+		// for (int i = 0; i < index.size(); i++) {
+		// sbuilder.append(values[index.get(i)]);
+		// if (i != index.size() - 1)
+		// sbuilder.append("|");
+		// }
 		System.out.println(sbuilder.toString());
 	}
 
