@@ -288,33 +288,6 @@ public class Main {
 			if(aggPrint)
 				printAggregateResult(selectItemsAsObject);
 			
-//			if(minL != Integer.MAX_VALUE){
-//				aggAnswers.add(minL+"");
-//			}
-//			if (minD != Integer.MAX_VALUE){
-//				aggAnswers.add(minD+"");
-//			}
-//			if(maxL != Integer.MIN_VALUE){
-//				aggAnswers.add(maxL+"");
-//			}
-//			if (maxD != Integer.MIN_VALUE){
-//				aggAnswers.add(maxD+"");
-//			}
-//			if(count != 0){
-//				aggAnswers.add(count+"");
-//			}
-//			if(aggAnswerL != 0){
-//				aggAnswers.add(aggAnswerL+"");
-//				//System.out.println(aggAnswerL);
-//			}
-//			if(aggAnswerD != 0.0){
-//				aggAnswers.add(aggAnswerD+"");
-//				//System.out.println(aggAnswerD);
-//			}
-//			if(total != 0.0){
-//				aggAnswers.add((total/avgCount) +"");
-//			}
-			
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
 		}
@@ -371,7 +344,7 @@ public class Main {
 				if ("COUNT".equalsIgnoreCase(aggName)) {
 					count = Long.parseLong(aggAnswersMap.get(ssitem));
 					count++;
-					aggAnswersMap.put(ssitem, count+"");
+					aggAnswersMap.put(ssitem, Long.toString(count));
 				} else {
 
 					Expression aggExpr = aggregateFunction.getParameters().getExpressions().get(0);
@@ -382,24 +355,24 @@ public class Main {
 						if (answer instanceof LongValue) {
 							aggAnswerL = Long.parseLong(aggAnswersMap.get(ssitem));
 							aggAnswerL += answer.toLong();
-							aggAnswersMap.put(ssitem, aggAnswerL+"");
+							aggAnswersMap.put(ssitem, Long.toString(aggAnswerL));
 						} else if (answer instanceof DoubleValue) {
 							aggAnswerD = Double.parseDouble(aggAnswersMap.get(ssitem));
 							aggAnswerD += answer.toDouble();
-							aggAnswersMap.put(ssitem, aggAnswerD+"");
+							aggAnswersMap.put(ssitem, Double.toString(aggAnswerD));
 						}
 					} else if ("MIN".equalsIgnoreCase(aggName)) {
 						if (answer instanceof LongValue) {
 							minL = Long.parseLong(aggAnswersMap.get(ssitem));
 							if (answer.toLong() < minL) {
 								minL = answer.toLong();
-								aggAnswersMap.put(ssitem, minL+"");
+								aggAnswersMap.put(ssitem, Long.toString(minL));
 							}
 						} else if (answer instanceof DoubleValue) {
 							minD = Double.parseDouble(aggAnswersMap.get(ssitem));
 							if (answer.toDouble() < minD) {
 								minD = answer.toDouble();
-								aggAnswersMap.put(ssitem, minD+"");
+								aggAnswersMap.put(ssitem, Double.toString(minD));
 							}
 						}
 					} else if ("MAX".equalsIgnoreCase(aggName)) {
@@ -407,13 +380,13 @@ public class Main {
 							maxL = Long.parseLong(aggAnswersMap.get(ssitem));
 							if (answer.toLong() > maxL) {
 								maxL = answer.toLong();
-								aggAnswersMap.put(ssitem, maxL+"");
+								aggAnswersMap.put(ssitem, Long.toString(maxL));
 							}
 						} else if (answer instanceof DoubleValue) {
 							maxD = Double.parseDouble(aggAnswersMap.get(ssitem));
 							if (answer.toDouble() > maxD) {
 								maxD = answer.toDouble();
-								aggAnswersMap.put(ssitem, maxD+"");
+								aggAnswersMap.put(ssitem, Double.toString(maxD));
 							}
 						}
 					} else if("AVG".equalsIgnoreCase(aggName)){
@@ -425,10 +398,12 @@ public class Main {
 						}
 						avgCount++;
 						avg = total/avgCount;
-						aggAnswersMap.put(ssitem, avg+"");
+						aggAnswersMap.put(ssitem, Double.toString(avg));
 					}
 
 				}
+				
+				//System.out.println("map: " + aggAnswersMap + " i = " + i);
 				//sbuilder.append(answer);
 			}
 
