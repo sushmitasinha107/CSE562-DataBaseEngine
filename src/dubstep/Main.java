@@ -1,4 +1,3 @@
-
 package dubstep;
 
 import java.io.File;
@@ -38,24 +37,13 @@ import net.sf.jsqlparser.statement.select.SelectItem;
 
 public class Main {
 	
-//	public static long aggAnswerL = 0;
-//	public static double aggAnswerD = 0.0;
-//	public static long minL = Integer.MAX_VALUE;
-//	public static double minD = Integer.MAX_VALUE;
-//	public static long maxL = Integer.MIN_VALUE;
-//	public static double maxD = Integer.MIN_VALUE;
-//	public static long count = 0;
-//	public static double aggAvg = 0.0;
-//	public static double total = 0.0;
 	public static long avgCount = 0;
-//	public static double avg = 0.0;
 	public static Boolean aggPrint = false;
-	
 	public static double aggAns = 0.0;
 	
-	//public static List<String> aggAnswers = new ArrayList<String>();
 	public static HashMap<String, Double> aggAnswersMap= new HashMap<String, Double>();
 	public static HashMap<String, SelectItem> selectItemsMap = new HashMap<>();
+	
 	
 	private class TableData{
 		Map<String, Integer> columnOrderMapping;
@@ -72,43 +60,67 @@ public class Main {
 		}
 		public void setColumnDataTypeMapping(Map<String, PrimitiveType> columnDataTypeMapping) {
 			this.columnDataTypeMapping = columnDataTypeMapping;
-		}
-		
-		
+		}	
 	}
+	
+	static Main mainObj = new Main();
+	static TableData tableData;
+	
+	public static Map<String, TableData> tableMapping = new HashMap<String, TableData>();
+	public static Map<String, Integer> columnOrderMapping = new HashMap<String, Integer>();
+	public static Map<String, PrimitiveType> columnDataTypeMapping = new HashMap<String, PrimitiveType>();
+	
+	public static List<ColumnDefinition> columnNames = null;
+	public static List<SelectItem> selectItemsAsObject = null;				
 
+	public static String myTableName = "";
+	public static String inputString = "";
+	public static String newRow = "";
+	public static String ssitem = "";
+	public static String aggName = "";
+	public static String[] values = null;
+	
+	public static StringReader input = null;
+
+	public static CCJSqlParser parser = null;
+	public static Statement query = null;
+	public static CreateTable table = null;
+	public static Select select = null;
+	public static PlainSelect plainSelect = null;
+	public static Expression e = null;
+	public static Expression selExp = null;
+	public static SelectExpressionItem sitem = null;
+	public static Function aggregateFunction = null;
+	public static Expression aggExpr = null;
+	public static PrimitiveValue answer = null;
+	
+	public static Scanner sc = null;
+	public static StringBuilder sbuilder = null;
+	
+	public static Boolean print = null;
+	
 	public static void main(String[] args) throws ParseException, SQLException {
-		Main mainObj = new Main();
-		TableData tableData;
-		Map<String, TableData> tableMapping = new HashMap<String, TableData>();
-		Map<String, Integer> columnOrderMapping = new HashMap<String, Integer>();
-		Map<String, PrimitiveType> columnDataTypeMapping = new HashMap<String, PrimitiveType>();
-		String myTableName = "";
 
 		System.out.print("$>");
-		Scanner sc = new Scanner(System.in);
+		sc = new Scanner(System.in);
 
 		while (sc.hasNext()) {
 
-			String inputString = sc.nextLine();
-			StringReader input = new StringReader(inputString);
-			CCJSqlParser parser = new CCJSqlParser(input);
+			inputString = sc.nextLine();
+			input = new StringReader(inputString);
+			parser = new CCJSqlParser(input);
 
 			try {
-				Statement query = parser.Statement();
-				//Statement tableStatement = parser.Statement();
-				
+				query = parser.Statement();				
 
 				if (query instanceof CreateTable) {
 					
-					CreateTable table = (CreateTable) query;
+					table = (CreateTable) query;
 
 					myTableName = table.getTable().getName();
-					//System.out.println("tablename: " + myTableName);
-
 					tableData = mainObj.new TableData();
 					
-					List<ColumnDefinition> columnNames = table.getColumnDefinitions();
+					columnNames = table.getColumnDefinitions();
 
 					int i = 0;
 					for (ColumnDefinition col : columnNames) {
@@ -124,47 +136,26 @@ public class Main {
 					
 				} else if (query instanceof Select) {
 										
-					Select select = (Select) query;	
-					PlainSelect plainSelect = (PlainSelect) select.getSelectBody();
+					select = (Select) query;	
+					plainSelect = (PlainSelect) select.getSelectBody();
 					
 					myTableName = plainSelect.getFromItem().toString();					
 					tableData = tableMapping.get(myTableName);
 					columnOrderMapping = tableData.getColumnOrderMapping();
 					columnDataTypeMapping = tableData.getColumnDataTypeMapping();
 					
-					List<String> selectItemsAsString = new ArrayList<String>();
-					List<SelectItem> selectItemsAsObject = new ArrayList<SelectItem>();					
+					selectItemsAsObject = new ArrayList<SelectItem>();					
 					
 					for (SelectItem sitem : plainSelect.getSelectItems()) {
-						selectItemsAsString.add(sitem.toString());
 						selectItemsAsObject.add(sitem);
 						selectItemsMap.put(sitem.toString(), null);
 					}
 					
-					if (selectItemsAsString.get(0).toString().equals("*")) {
-						int j = 0;
-						for (String s : columnOrderMapping.keySet()) {
-							if (j == 0)
-								selectItemsAsString.set(0, s); // update * with
-																// the column
-																// name
-							else
-								selectItemsAsString.add(j, s); // add remaining
-																// column names
-							j++;
-						}
-					}
-					
-					List<Integer> selectIndexes = null;
-
-					Expression e = plainSelect.getWhere();
-					//aggAnswers = new ArrayList<String>();
+					e = plainSelect.getWhere();
 					aggAnswersMap = new HashMap<String, Double>();
 					
-					readFromFile(myTableName, selectIndexes, selectItemsAsObject, columnOrderMapping,
-							columnDataTypeMapping, e);
+					readFromFile();
 					
-					//printAggregate();
 				} else {
 					// System.out.println("Not of type select");
 				}
@@ -175,22 +166,6 @@ public class Main {
 		}
 
 	}
-
-//	private static void printAggregate() {
-//		
-//		System.out.println("list: " + aggAnswers);
-//		if (aggAnswers.size() != 0) {
-//			StringBuilder sb = new StringBuilder();
-//			for (int i = 0; i < aggAnswers.size(); i++) {
-//				sb.append(aggAnswers.get(i));
-//				if (i != aggAnswers.size() - 1)
-//					sb.append('|');
-//			}
-//
-//			System.out.println(sb);
-//			aggAnswers = new ArrayList<String>();
-//		}
-//	}
 
 	private static PrimitiveType getPrimitiveValue(ColDataType datatype) {
 
@@ -217,50 +192,25 @@ public class Main {
 		return null;
 	}
 
-//	private static List<Integer> getSelectIndexesfromMap(List<String> items, Map<String, Integer> map) {
-//
-//		List<Integer> index = new ArrayList<Integer>();
-//
-//		for (int i = 0; i < items.size(); i++) {
-//			int num = map.get(items.get(i));
-//			index.add(num);
-//		}
-//		return index;
-//	}
-
 	public static void reinitializeValues(){
-//		aggAnswerL = 0;
-//		aggAnswerD = 0.0;
-//		count = 0;
-//		minL = Integer.MAX_VALUE;
-//		minD = Integer.MAX_VALUE;
-//		maxL = Integer.MIN_VALUE;
-//		maxD = Integer.MIN_VALUE;
-//		aggAvg = 0.0;
-//		total = 0.0;
-		avgCount = 0;
-//		avg = 0.0;
-		
+		avgCount = 0;		
 		aggAns = 0.0;
 	}
 	
-	public static void readFromFile(String tableName, List<Integer> index, List<SelectItem> selectItemsAsObject,
-			Map<String, Integer> columnOrderMapping, Map<String, PrimitiveType> columnDataTypeMapping, Expression expr)
-			throws SQLException {
+	public static void readFromFile() throws SQLException {
 		File file = new File("data/" + tableName + ".csv");
-		//File file = new File(tableName + ".csv");
+		//File file = new File(myTableName + ".csv");
 		
 		reinitializeValues();
 		
-		Boolean noRows = true;
 		try {
 			Scanner sc = new Scanner(file);
 			while (sc.hasNext()) {
 
 				/* read line from csv file */
-				String newRow = sc.nextLine();
+				newRow = sc.nextLine();
 				/* values array have individual column values from the file */
-				String[] values = newRow.split("\\|"); 
+				values = newRow.split("\\|", -1); 
 				
 				/* where clause evaluation */
 				Eval eval = new Eval() {
@@ -280,27 +230,19 @@ public class Main {
 					}
 				};
 
-				//System.out.println("where expr:" + expr);
-				if (!(expr == null)) {
-					PrimitiveValue ret = eval.eval(expr);
+				if (!(e == null)) {
+					PrimitiveValue ret = eval.eval(e);
 					if ("TRUE".equals(ret.toString())) {
-						printToConsole(index, values, columnOrderMapping, columnDataTypeMapping, selectItemsAsObject);
-						noRows = false;
+						printToConsole();
 					}
 				} else {
-					noRows = false;
-					printToConsole(index, values, columnOrderMapping, columnDataTypeMapping, selectItemsAsObject);
+					printToConsole();
 				}
 				
 			}/*done with file reading...if aggregate function, then print after this and not in printToConsole*/
 			
 			if(aggPrint)
 				printAggregateResult(selectItemsAsObject);
-			
-			//System.out.println(aggAnswersMap);
-			if(noRows){
-				System.out.println("|||");
-			}
 			
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
@@ -312,26 +254,24 @@ public class Main {
 		StringBuilder sb = new StringBuilder();
 		for (int i = 0; i < selectItemsAsObject.size(); i++) {
 
-			SelectExpressionItem sitem = (SelectExpressionItem) selectItemsAsObject.get(i);
-			Expression selExp = sitem.getExpression();
-			String ssitem = sitem.toString();
+			sitem = (SelectExpressionItem) selectItemsAsObject.get(i);
+			selExp = sitem.getExpression();
+			ssitem = sitem.toString();
 			sb.append(aggAnswersMap.get(ssitem));
 			if(i != selectItemsAsObject.size()-1){
 				sb.append('|');
 			}
 		}
-		if(sb != null)
-			System.out.println(sb);
+		
+		System.out.println(sb);
 		
 	}
 
-	private static void printToConsole(List<Integer> index, String[] values, Map<String, Integer> columnOrderMapping,
-			Map<String, PrimitiveType> columnDataTypeMapping, List<SelectItem> selectItemsAsObject)
-			throws SQLException {
+	private static void printToConsole() throws SQLException {
 
-		StringBuilder sbuilder = new StringBuilder();
+		sbuilder = new StringBuilder();
 
-		Boolean print = true;
+		print = true;
 		for (int i = 0; i < selectItemsAsObject.size(); i++) {
 
 			SelectExpressionItem sitem = (SelectExpressionItem) selectItemsAsObject.get(i);
@@ -352,98 +292,42 @@ public class Main {
 				print = false;
 				aggPrint = true;
 				
-				Function aggregateFunction = (Function) selExp;
-				String aggName = aggregateFunction.getName();
+				aggregateFunction = (Function) selExp;
+				aggName = aggregateFunction.getName();
 				
 				if ("COUNT".equalsIgnoreCase(aggName)) {
-//					count = Long.parseLong(aggAnswersMap.get(ssitem));
-//					count++;
-					//aggAnswersMap.put(ssitem, Long.toString(count));
 					aggAns = aggAnswersMap.get(ssitem);
 					aggAns++;
 					aggAnswersMap.put(ssitem, aggAns);
 					
 				} else {
 
-					Expression aggExpr = aggregateFunction.getParameters().getExpressions().get(0);
-
-					PrimitiveValue answer = null;
-					answer = computeExpression(columnDataTypeMapping, columnOrderMapping, aggExpr, values);
+					aggExpr = aggregateFunction.getParameters().getExpressions().get(0);
+					answer = computeExpression();
 					
 					aggAns = aggAnswersMap.get(ssitem);
 					
 					if ("SUM".equalsIgnoreCase(aggName)) {
-//						if (answer instanceof LongValue) {
-////							aggAnswerL = Long.parseLong(aggAnswersMap.get(ssitem));
-////							aggAnswerL += answer.toLong();
-////							aggAnswersMap.put(ssitem, Long.toString(aggAnswerL));
-//							
-//							
-//						} else if (answer instanceof DoubleValue) {
-////							aggAnswerD = Double.parseDouble(aggAnswersMap.get(ssitem));
-////							aggAnswerD += answer.toDouble();
-////							aggAnswersMap.put(ssitem, Double.toString(aggAnswerD));
-//						}
-						
 						aggAns += answer.toDouble();
 						
 					} else if ("MIN".equalsIgnoreCase(aggName)) {
-//						if (answer instanceof LongValue) {
-//							minL = Long.parseLong(aggAnswersMap.get(ssitem));
-//							if (answer.toLong() < minL) {
-//								minL = answer.toLong();
-//								aggAnswersMap.put(ssitem, Long.toString(minL));
-//							}
-//						} else if (answer instanceof DoubleValue) {
-//							minD = Double.parseDouble(aggAnswersMap.get(ssitem));
-//							if (answer.toDouble() < minD) {
-//								minD = answer.toDouble();
-//								aggAnswersMap.put(ssitem, Double.toString(minD));
-//							}
-//						}
 						if(answer.toDouble() < aggAns){
 							aggAns = answer.toDouble();
 						}
 						
 					} else if ("MAX".equalsIgnoreCase(aggName)) {
-//						if (answer instanceof LongValue) {
-//							maxL = Long.parseLong(aggAnswersMap.get(ssitem));
-//							if (answer.toLong() > maxL) {
-//								maxL = answer.toLong();
-//								aggAnswersMap.put(ssitem, Long.toString(maxL));
-//							}
-//						} else if (answer instanceof DoubleValue) {
-//							maxD = Double.parseDouble(aggAnswersMap.get(ssitem));
-//							if (answer.toDouble() > maxD) {
-//								maxD = answer.toDouble();
-//								aggAnswersMap.put(ssitem, Double.toString(maxD));
-//							}
-//						}
-						
 						if(answer.toDouble() > aggAns){
 							aggAns = answer.toDouble();
 						}
 						
 					} else if("AVG".equalsIgnoreCase(aggName)){
-//						avg = Double.parseDouble(aggAnswersMap.get(ssitem));
-//						if (answer instanceof LongValue) {
-//							total += answer.toLong();
-//						} else if (answer instanceof DoubleValue) {
-//							total += answer.toDouble();
-//						}
 						avgCount++;
-						//avg = total/avgCount;
-						//aggAnswersMap.put(ssitem, Double.toString(avg));
 						aggAns = aggAns/avgCount;
-						
 					}
 					
 					aggAnswersMap.put(ssitem, aggAns);
 
 				}
-				
-				//System.out.println("map: " + aggAnswersMap + " i = " + i);
-				//sbuilder.append(answer);
 			}
 
 			else if (selExp instanceof Addition || selExp instanceof Subtraction || selExp instanceof Multiplication
@@ -476,7 +360,7 @@ public class Main {
 		}
 	}
 	
-	private static PrimitiveValue computeExpression(Map<String, PrimitiveType> columnDataTypeMapping, Map<String, Integer> columnOrderMapping, Expression expr, String[] values) throws SQLException{
+	private static PrimitiveValue computeExpression() throws SQLException{
 		
 		Eval eval = new Eval() {
 			public PrimitiveValue eval(Column c) {
@@ -488,7 +372,7 @@ public class Main {
 			}
 		};
 
-		PrimitiveValue result = eval.eval(expr);
+		PrimitiveValue result = eval.eval(aggExpr);
 		
 		return result;
 	}
