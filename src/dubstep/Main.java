@@ -247,11 +247,12 @@ public class Main {
 	public static void readFromFile(String tableName, List<Integer> index, List<SelectItem> selectItemsAsObject,
 			Map<String, Integer> columnOrderMapping, Map<String, PrimitiveType> columnDataTypeMapping, Expression expr)
 			throws SQLException {
-		 File file = new File("data/" + tableName + ".csv");
+		File file = new File("data/" + tableName + ".csv");
 		//File file = new File(tableName + ".csv");
 		
 		reinitializeValues();
 		
+		Boolean noRows = true;
 		try {
 			Scanner sc = new Scanner(file);
 			while (sc.hasNext()) {
@@ -284,8 +285,10 @@ public class Main {
 					PrimitiveValue ret = eval.eval(expr);
 					if ("TRUE".equals(ret.toString())) {
 						printToConsole(index, values, columnOrderMapping, columnDataTypeMapping, selectItemsAsObject);
+						noRows = false;
 					}
 				} else {
+					noRows = false;
 					printToConsole(index, values, columnOrderMapping, columnDataTypeMapping, selectItemsAsObject);
 				}
 				
@@ -293,6 +296,11 @@ public class Main {
 			
 			if(aggPrint)
 				printAggregateResult(selectItemsAsObject);
+			
+			//System.out.println(aggAnswersMap);
+			if(noRows){
+				System.out.println("|||");
+			}
 			
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
@@ -312,8 +320,8 @@ public class Main {
 				sb.append('|');
 			}
 		}
-		
-		System.out.println(sb);
+		if(sb != null)
+			System.out.println(sb);
 		
 	}
 
