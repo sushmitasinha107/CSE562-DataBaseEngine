@@ -41,7 +41,7 @@ public class Main {
 	public static Boolean aggPrint = false;
 	public static double aggAns = 0.0;
 	
-	public static HashMap<String, Double> aggAnswersMap= new HashMap<String, Double>();
+	//public static HashMap<String, Double> aggAnswersMap= new HashMap<String, Double>();
 	public static HashMap<String, SelectItem> selectItemsMap = new HashMap<>();
 	
 	
@@ -96,6 +96,14 @@ public class Main {
 	
 	public static Scanner sc = null;
 	public static StringBuilder sbuilder = null;
+	
+	public static double aggSum = 0;
+  public static long aggCount = 0;
+  public static double aggMin = Integer.MAX_VALUE;
+  public static double aggMax = Integer.MIN_VALUE;
+  public static double aggAvg = 0.0;
+  public static double avgTotal = 0.0;
+    
 	
 	public static Boolean print = null;
 	
@@ -152,7 +160,7 @@ public class Main {
 					}
 					
 					e = plainSelect.getWhere();
-					aggAnswersMap = new HashMap<String, Double>();
+					//aggAnswersMap = new HashMap<String, Double>();
 					
 					readFromFile();
 					
@@ -167,39 +175,38 @@ public class Main {
 
 	}
 
-	private static PrimitiveType getPrimitiveValue(ColDataType datatype) {
-
-		String dtype = datatype.getDataType();
-		if (dtype.equals("int")) {
-			return PrimitiveType.LONG;
-		}
-		if (dtype.equals("decimal")) {
-			return PrimitiveType.DOUBLE;
-		}
-		if (dtype.equals("string")) {
-			return PrimitiveType.STRING;
-		}
-		if (dtype.equals("date")) {
-			return PrimitiveType.DATE;
-		}
-		if (dtype.equals("varchar")) {
-			return PrimitiveType.STRING;
-		}
-		if (dtype.equals("char")) {
-			return PrimitiveType.STRING;
-		}
-
-		return null;
-	}
+//	private static PrimitiveType getPrimitiveValue(ColDataType datatype) {
+//
+//		String dtype = datatype.getDataType();
+//		if (dtype.equals("int")) {
+//			return PrimitiveType.LONG;
+//		}
+//		if (dtype.equals("decimal")) {
+//			return PrimitiveType.DOUBLE;
+//		}
+//		if (dtype.equals("string")) {
+//			return PrimitiveType.STRING;
+//		}
+//		if (dtype.equals("date")) {
+//			return PrimitiveType.DATE;
+//		}
+//		if (dtype.equals("varchar")) {
+//			return PrimitiveType.STRING;
+//		}
+//		if (dtype.equals("char")) {
+//			return PrimitiveType.STRING;
+//		}
+//
+//		return null;
+//	}
 
 	public static void reinitializeValues(){
 		avgCount = 0;		
 		aggAns = 0.0;
 	}
 	
-	public static void readFromFile()
-			throws SQLException {
-		File file = new File("data/" + myTableName + ".csv");
+	public static void readFromFile() throws SQLException {
+		 File file = new File("data/" + myTableName + ".csv");
 		//File file = new File(myTableName + ".csv");
 		
 		reinitializeValues();
@@ -248,6 +255,9 @@ public class Main {
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
 		}
+//		finally{
+//			sc.close();
+//		}
 	}
 
 	private static void printAggregateResult(List<SelectItem> selectItemsAsObject) {
@@ -258,11 +268,27 @@ public class Main {
 			sitem = (SelectExpressionItem) selectItemsAsObject.get(i);
 			selExp = sitem.getExpression();
 			ssitem = sitem.toString();
-			sb.append(aggAnswersMap.get(ssitem));
-			if(i != selectItemsAsObject.size()-1){
+			
+			aggName = ((Function) selExp).getName();
+			if("SUM".equalsIgnoreCase(aggName)){
+				sb.append(aggSum);
+				sb.append('|');
+			}else if("MIN".equalsIgnoreCase(aggName)){
+				sb.append(aggMin);
+				sb.append('|');
+			}else if("MAX".equalsIgnoreCase(aggName)){
+				sb.append(aggMax);
+				sb.append('|');
+			}else if("AVG".equalsIgnoreCase(aggName)){
+				sb.append(avgTotal/avgCount);
+				sb.append('|');
+			}else if("COUNT".equalsIgnoreCase(aggName)){
+				sb.append(aggCount);
 				sb.append('|');
 			}
 		}
+		
+		sb.setLength(sb.length() - 1);
 		
 		System.out.println(sb);
 		
@@ -279,13 +305,13 @@ public class Main {
 			Expression selExp = sitem.getExpression();
 
 			String ssitem = sitem.toString();
-			if(!aggAnswersMap.containsKey(ssitem)){
-				if(sitem.toString().contains("MIN") || sitem.toString().contains("min")){
-					aggAnswersMap.put(ssitem, (double) Integer.MAX_VALUE);
-				}else{
-					aggAnswersMap.put(ssitem, 0.0);		
-				}
-			}
+//			if(!aggAnswersMap.containsKey(ssitem)){
+//				if(sitem.toString().contains("MIN") || sitem.toString().contains("min")){
+//					aggAnswersMap.put(ssitem, (double) Integer.MAX_VALUE);
+//				}else{
+//					aggAnswersMap.put(ssitem, 0.0);		
+//				}
+//			}
 			print = true;
 			aggPrint = false;
 			if(selExp instanceof Function){
@@ -297,36 +323,49 @@ public class Main {
 				aggName = aggregateFunction.getName();
 				
 				if ("COUNT".equalsIgnoreCase(aggName)) {
-					aggAns = aggAnswersMap.get(ssitem);
-					aggAns++;
-					aggAnswersMap.put(ssitem, aggAns);
+//					aggAns = aggAnswersMap.get(ssitem);
+//					aggAns++;
+//					aggAnswersMap.put(ssitem, aggAns);
+					
+					aggCount++;
 					
 				} else {
 
 					aggExpr = aggregateFunction.getParameters().getExpressions().get(0);
 					answer = computeExpression();
 					
-					aggAns = aggAnswersMap.get(ssitem);
+					//aggAns = aggAnswersMap.get(ssitem);
 					
 					if ("SUM".equalsIgnoreCase(aggName)) {
-						aggAns += answer.toDouble();
+						//aggAns += answer.toDouble();
+						aggSum += answer.toDouble();
 						
 					} else if ("MIN".equalsIgnoreCase(aggName)) {
-						if(answer.toDouble() < aggAns){
-							aggAns = answer.toDouble();
+//						if(answer.toDouble() < aggAns){
+//							aggAns = answer.toDouble();
+//						}
+						
+						if(answer.toDouble() < aggMin){
+							aggMin = answer.toDouble();
 						}
 						
 					} else if ("MAX".equalsIgnoreCase(aggName)) {
-						if(answer.toDouble() > aggAns){
-							aggAns = answer.toDouble();
+//						if(answer.toDouble() > aggAns){
+//							aggAns = answer.toDouble();
+//						}
+						
+						if(answer.toDouble() > aggMax){
+							aggMax = answer.toDouble();
 						}
 						
 					} else if("AVG".equalsIgnoreCase(aggName)){
 						avgCount++;
-						aggAns = aggAns/avgCount;
+						//aggAns = aggAns/avgCount;
+						avgTotal += answer.toDouble();
+						
 					}
 					
-					aggAnswersMap.put(ssitem, aggAns);
+					//aggAnswersMap.put(ssitem, aggAns);
 
 				}
 			}
