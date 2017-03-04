@@ -47,7 +47,7 @@ public class Main {
 	
 	private class TableData{
 		Map<String, Integer> columnOrderMapping;
-		Map<String, PrimitiveType> columnDataTypeMapping;
+		Map<String, ColDataType> columnDataTypeMapping;
 		
 		public Map<String, Integer> getColumnOrderMapping() {
 			return columnOrderMapping;
@@ -55,10 +55,10 @@ public class Main {
 		public void setColumnOrderMapping(Map<String, Integer> columnOrderMapping) {
 			this.columnOrderMapping = columnOrderMapping;
 		}
-		public Map<String, PrimitiveType> getColumnDataTypeMapping() {
+		public Map<String, ColDataType> getColumnDataTypeMapping() {
 			return columnDataTypeMapping;
 		}
-		public void setColumnDataTypeMapping(Map<String, PrimitiveType> columnDataTypeMapping) {
+		public void setColumnDataTypeMapping(Map<String, ColDataType> columnDataTypeMapping) {
 			this.columnDataTypeMapping = columnDataTypeMapping;
 		}	
 	}
@@ -68,7 +68,7 @@ public class Main {
 	
 	public static Map<String, TableData> tableMapping = new HashMap<String, TableData>();
 	public static Map<String, Integer> columnOrderMapping = new HashMap<String, Integer>();
-	public static Map<String, PrimitiveType> columnDataTypeMapping = new HashMap<String, PrimitiveType>();
+	public static Map<String, ColDataType> columnDataTypeMapping = new HashMap<String, ColDataType>();
 	
 	public static List<ColumnDefinition> columnNames = null;
 	public static List<SelectItem> selectItemsAsObject = null;				
@@ -125,10 +125,10 @@ public class Main {
 					int i = 0;
 					for (ColumnDefinition col : columnNames) {
 						columnOrderMapping.put(col.getColumnName(), i);
-						columnDataTypeMapping.put(col.getColumnName(), getPrimitiveValue(col.getColDataType()));
+						columnDataTypeMapping.put(col.getColumnName(), col.getColDataType());
 						i++;
 					}
-					
+					System.out.println();
 					tableData.setColumnDataTypeMapping(columnDataTypeMapping);
 					tableData.setColumnOrderMapping(columnOrderMapping);
 					
@@ -225,7 +225,7 @@ public class Main {
 						 * get this column's datatype so that we know what to
 						 * return
 						 */
-						PrimitiveType ptype = columnDataTypeMapping.get(c.toString());
+						ColDataType ptype = columnDataTypeMapping.get(c.toString());
 
 						return getReturnType(ptype, values[idx]);
 					}
@@ -338,7 +338,7 @@ public class Main {
 					public PrimitiveValue eval(Column c) {
 						
 						int idx = columnOrderMapping.get(c.toString());
-						PrimitiveType ptype = columnDataTypeMapping.get(c.toString());
+						ColDataType ptype = columnDataTypeMapping.get(c.toString());
 
 						return getReturnType(ptype, values[idx]);
 					}
@@ -367,7 +367,7 @@ public class Main {
 			public PrimitiveValue eval(Column c) {
 				
 				int idx = columnOrderMapping.get(c.toString());
-				PrimitiveType ptype = columnDataTypeMapping.get(c.toString());
+				ColDataType ptype = columnDataTypeMapping.get(c.toString());
 
 				return getReturnType(ptype, values[idx]);
 			}
@@ -378,18 +378,15 @@ public class Main {
 		return result;
 	}
 
-	private static PrimitiveValue getReturnType(PrimitiveType ptype, String value) {
+	private static PrimitiveValue getReturnType(ColDataType ptype, String value) {
 
-		if (ptype.equals(PrimitiveType.LONG)) {
+		if (ptype.toString().equalsIgnoreCase("int")) {
 			return new LongValue(value);
-		}
-		if (ptype.equals(PrimitiveType.STRING)) {
+		}else if (ptype.toString().equalsIgnoreCase("varchar") || ptype.toString().equalsIgnoreCase("char") || ptype.toString().equalsIgnoreCase("string") ) {
 			return new StringValue(value);
-		}
-		if (ptype.equals(PrimitiveType.DATE)) {
+		}else if (ptype.toString().equalsIgnoreCase("date")) {
 			return new DateValue(value);
-		}
-		if (ptype.equals(PrimitiveType.DOUBLE)) {
+		}else if (ptype.toString().equalsIgnoreCase("decimal")) {
 			return new DoubleValue(value);
 		}
 
