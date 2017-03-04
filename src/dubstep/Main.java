@@ -1,4 +1,3 @@
-
 package dubstep;
 
 import java.io.File;
@@ -51,8 +50,11 @@ public class Main {
 	public static double avg = 0.0;
 	public static Boolean aggPrint = false;
 	
+	public static double aggAns = 0.0;
+	
 	public static List<String> aggAnswers = new ArrayList<String>();
-	public static HashMap<String, String> aggAnswersMap= new HashMap<String, String>();
+	public static HashMap<String, Double> aggAnswersMap= new HashMap<String, Double>();
+	public static HashMap<String, SelectItem> selectItemsMap = new HashMap<>();
 	
 	private class TableData{
 		Map<String, Integer> columnOrderMapping;
@@ -135,6 +137,7 @@ public class Main {
 					for (SelectItem sitem : plainSelect.getSelectItems()) {
 						selectItemsAsString.add(sitem.toString());
 						selectItemsAsObject.add(sitem);
+						selectItemsMap.put(sitem.toString(), null);
 					}
 					
 					if (selectItemsAsString.get(0).toString().equals("*")) {
@@ -155,7 +158,7 @@ public class Main {
 
 					Expression e = plainSelect.getWhere();
 					aggAnswers = new ArrayList<String>();
-					aggAnswersMap = new HashMap<String, String>();
+					aggAnswersMap = new HashMap<String, Double>();
 					
 					readFromFile(myTableName, selectIndexes, selectItemsAsObject, columnOrderMapping,
 							columnDataTypeMapping, e);
@@ -236,12 +239,14 @@ public class Main {
 		total = 0.0;
 		avgCount = 0;
 		avg = 0.0;
+		
+		aggAns = 0.0;
 	}
 	
 	public static void readFromFile(String tableName, List<Integer> index, List<SelectItem> selectItemsAsObject,
 			Map<String, Integer> columnOrderMapping, Map<String, PrimitiveType> columnDataTypeMapping, Expression expr)
 			throws SQLException {
-		 File file = new File("data/" + tableName + ".csv");
+		File file = new File("data/" + tableName + ".csv");
 		//File file = new File(tableName + ".csv");
 		
 		reinitializeValues();
@@ -326,9 +331,9 @@ public class Main {
 			String ssitem = sitem.toString();
 			if(!aggAnswersMap.containsKey(ssitem)){
 				if(sitem.toString().contains("MIN") || sitem.toString().contains("min")){
-					aggAnswersMap.put(ssitem, Integer.MAX_VALUE+"");
+					aggAnswersMap.put(ssitem, (double) Integer.MAX_VALUE);
 				}else{
-					aggAnswersMap.put(ssitem, "0");		
+					aggAnswersMap.put(ssitem, 0.0);		
 				}
 			}
 			print = true;
@@ -342,64 +347,89 @@ public class Main {
 				String aggName = aggregateFunction.getName();
 				
 				if ("COUNT".equalsIgnoreCase(aggName)) {
-					count = Long.parseLong(aggAnswersMap.get(ssitem));
-					count++;
-					aggAnswersMap.put(ssitem, Long.toString(count));
+//					count = Long.parseLong(aggAnswersMap.get(ssitem));
+//					count++;
+					//aggAnswersMap.put(ssitem, Long.toString(count));
+					aggAns = aggAnswersMap.get(ssitem);
+					aggAns++;
+					aggAnswersMap.put(ssitem, aggAns);
+					
 				} else {
 
 					Expression aggExpr = aggregateFunction.getParameters().getExpressions().get(0);
 
 					PrimitiveValue answer = null;
 					answer = computeExpression(columnDataTypeMapping, columnOrderMapping, aggExpr, values);
+					
+					aggAns = aggAnswersMap.get(ssitem);
+					
 					if ("SUM".equalsIgnoreCase(aggName)) {
-						if (answer instanceof LongValue) {
-							aggAnswerL = Long.parseLong(aggAnswersMap.get(ssitem));
-							aggAnswerL += answer.toLong();
-							aggAnswersMap.put(ssitem, Long.toString(aggAnswerL));
-						} else if (answer instanceof DoubleValue) {
-							aggAnswerD = Double.parseDouble(aggAnswersMap.get(ssitem));
-							aggAnswerD += answer.toDouble();
-							aggAnswersMap.put(ssitem, Double.toString(aggAnswerD));
-						}
+//						if (answer instanceof LongValue) {
+////							aggAnswerL = Long.parseLong(aggAnswersMap.get(ssitem));
+////							aggAnswerL += answer.toLong();
+////							aggAnswersMap.put(ssitem, Long.toString(aggAnswerL));
+//							
+//							
+//						} else if (answer instanceof DoubleValue) {
+////							aggAnswerD = Double.parseDouble(aggAnswersMap.get(ssitem));
+////							aggAnswerD += answer.toDouble();
+////							aggAnswersMap.put(ssitem, Double.toString(aggAnswerD));
+//						}
+						
+						aggAns += answer.toDouble();
+						
 					} else if ("MIN".equalsIgnoreCase(aggName)) {
-						if (answer instanceof LongValue) {
-							minL = Long.parseLong(aggAnswersMap.get(ssitem));
-							if (answer.toLong() < minL) {
-								minL = answer.toLong();
-								aggAnswersMap.put(ssitem, Long.toString(minL));
-							}
-						} else if (answer instanceof DoubleValue) {
-							minD = Double.parseDouble(aggAnswersMap.get(ssitem));
-							if (answer.toDouble() < minD) {
-								minD = answer.toDouble();
-								aggAnswersMap.put(ssitem, Double.toString(minD));
-							}
+//						if (answer instanceof LongValue) {
+//							minL = Long.parseLong(aggAnswersMap.get(ssitem));
+//							if (answer.toLong() < minL) {
+//								minL = answer.toLong();
+//								aggAnswersMap.put(ssitem, Long.toString(minL));
+//							}
+//						} else if (answer instanceof DoubleValue) {
+//							minD = Double.parseDouble(aggAnswersMap.get(ssitem));
+//							if (answer.toDouble() < minD) {
+//								minD = answer.toDouble();
+//								aggAnswersMap.put(ssitem, Double.toString(minD));
+//							}
+//						}
+						if(answer.toDouble() < aggAns){
+							aggAns = answer.toDouble();
 						}
+						
 					} else if ("MAX".equalsIgnoreCase(aggName)) {
-						if (answer instanceof LongValue) {
-							maxL = Long.parseLong(aggAnswersMap.get(ssitem));
-							if (answer.toLong() > maxL) {
-								maxL = answer.toLong();
-								aggAnswersMap.put(ssitem, Long.toString(maxL));
-							}
-						} else if (answer instanceof DoubleValue) {
-							maxD = Double.parseDouble(aggAnswersMap.get(ssitem));
-							if (answer.toDouble() > maxD) {
-								maxD = answer.toDouble();
-								aggAnswersMap.put(ssitem, Double.toString(maxD));
-							}
+//						if (answer instanceof LongValue) {
+//							maxL = Long.parseLong(aggAnswersMap.get(ssitem));
+//							if (answer.toLong() > maxL) {
+//								maxL = answer.toLong();
+//								aggAnswersMap.put(ssitem, Long.toString(maxL));
+//							}
+//						} else if (answer instanceof DoubleValue) {
+//							maxD = Double.parseDouble(aggAnswersMap.get(ssitem));
+//							if (answer.toDouble() > maxD) {
+//								maxD = answer.toDouble();
+//								aggAnswersMap.put(ssitem, Double.toString(maxD));
+//							}
+//						}
+						
+						if(answer.toDouble() > aggAns){
+							aggAns = answer.toDouble();
 						}
+						
 					} else if("AVG".equalsIgnoreCase(aggName)){
-						avg = Double.parseDouble(aggAnswersMap.get(ssitem));
-						if (answer instanceof LongValue) {
-							total += answer.toLong();
-						} else if (answer instanceof DoubleValue) {
-							total += answer.toDouble();
-						}
+//						avg = Double.parseDouble(aggAnswersMap.get(ssitem));
+//						if (answer instanceof LongValue) {
+//							total += answer.toLong();
+//						} else if (answer instanceof DoubleValue) {
+//							total += answer.toDouble();
+//						}
 						avgCount++;
-						avg = total/avgCount;
-						aggAnswersMap.put(ssitem, Double.toString(avg));
+						//avg = total/avgCount;
+						//aggAnswersMap.put(ssitem, Double.toString(avg));
+						aggAns = aggAns/avgCount;
+						
 					}
+					
+					aggAnswersMap.put(ssitem, aggAns);
 
 				}
 				
