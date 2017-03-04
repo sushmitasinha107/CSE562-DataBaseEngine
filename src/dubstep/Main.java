@@ -1,3 +1,4 @@
+
 package dubstep;
 
 import java.io.File;
@@ -37,22 +38,22 @@ import net.sf.jsqlparser.statement.select.SelectItem;
 
 public class Main {
 	
-	public static long aggAnswerL = 0;
-	public static double aggAnswerD = 0.0;
-	public static long minL = Integer.MAX_VALUE;
-	public static double minD = Integer.MAX_VALUE;
-	public static long maxL = Integer.MIN_VALUE;
-	public static double maxD = Integer.MIN_VALUE;
-	public static long count = 0;
-	public static double aggAvg = 0.0;
-	public static double total = 0.0;
+//	public static long aggAnswerL = 0;
+//	public static double aggAnswerD = 0.0;
+//	public static long minL = Integer.MAX_VALUE;
+//	public static double minD = Integer.MAX_VALUE;
+//	public static long maxL = Integer.MIN_VALUE;
+//	public static double maxD = Integer.MIN_VALUE;
+//	public static long count = 0;
+//	public static double aggAvg = 0.0;
+//	public static double total = 0.0;
 	public static long avgCount = 0;
-	public static double avg = 0.0;
+//	public static double avg = 0.0;
 	public static Boolean aggPrint = false;
 	
 	public static double aggAns = 0.0;
 	
-	public static List<String> aggAnswers = new ArrayList<String>();
+	//public static List<String> aggAnswers = new ArrayList<String>();
 	public static HashMap<String, Double> aggAnswersMap= new HashMap<String, Double>();
 	public static HashMap<String, SelectItem> selectItemsMap = new HashMap<>();
 	
@@ -157,7 +158,7 @@ public class Main {
 					List<Integer> selectIndexes = null;
 
 					Expression e = plainSelect.getWhere();
-					aggAnswers = new ArrayList<String>();
+					//aggAnswers = new ArrayList<String>();
 					aggAnswersMap = new HashMap<String, Double>();
 					
 					readFromFile(myTableName, selectIndexes, selectItemsAsObject, columnOrderMapping,
@@ -228,17 +229,17 @@ public class Main {
 //	}
 
 	public static void reinitializeValues(){
-		aggAnswerL = 0;
-		aggAnswerD = 0.0;
-		count = 0;
-		minL = Integer.MAX_VALUE;
-		minD = Integer.MAX_VALUE;
-		maxL = Integer.MIN_VALUE;
-		maxD = Integer.MIN_VALUE;
-		aggAvg = 0.0;
-		total = 0.0;
+//		aggAnswerL = 0;
+//		aggAnswerD = 0.0;
+//		count = 0;
+//		minL = Integer.MAX_VALUE;
+//		minD = Integer.MAX_VALUE;
+//		maxL = Integer.MIN_VALUE;
+//		maxD = Integer.MIN_VALUE;
+//		aggAvg = 0.0;
+//		total = 0.0;
 		avgCount = 0;
-		avg = 0.0;
+//		avg = 0.0;
 		
 		aggAns = 0.0;
 	}
@@ -246,7 +247,7 @@ public class Main {
 	public static void readFromFile(String tableName, List<Integer> index, List<SelectItem> selectItemsAsObject,
 			Map<String, Integer> columnOrderMapping, Map<String, PrimitiveType> columnDataTypeMapping, Expression expr)
 			throws SQLException {
-		File file = new File("data/" + tableName + ".csv");
+		 File file = new File("data/" + tableName + ".csv");
 		//File file = new File(tableName + ".csv");
 		
 		reinitializeValues();
