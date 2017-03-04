@@ -1,4 +1,3 @@
-
 package dubstep;
 
 import java.io.File;
@@ -200,7 +199,7 @@ public class Main {
 	
 	public static void readFromFile()
 			throws SQLException {
-		File file = new File("data/" + tableName + ".csv");
+		File file = new File("data/" + myTableName + ".csv");
 		//File file = new File(myTableName + ".csv");
 		
 		reinitializeValues();
