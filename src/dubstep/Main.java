@@ -1,3 +1,4 @@
+
 package dubstep;
 
 import java.io.File;
@@ -5,6 +6,7 @@ import java.io.FileNotFoundException;
 import java.io.StringReader;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -43,6 +45,8 @@ public class Main {
 
 	public static HashMap<String, SelectItem> selectItemsMap = new HashMap<>();
 
+	public enum AggFunctions { SUM, MIN, MAX, AVG, COUNT }; 
+	
 	private class TableData {
 		Map<String, Integer> columnOrderMapping;
 		Map<String, ColDataType> columnDataTypeMapping;
@@ -104,8 +108,24 @@ public class Main {
 	public static double aggMax = Integer.MIN_VALUE;
 	public static double aggAvg = 0.0;
 	public static double avgTotal = 0.0;
+	public static int[] aggNo = null;
 
 	public static Boolean print = null;
+	
+	public static int getAggNo(String aggName){
+		if(aggName.equalsIgnoreCase("SUM")){
+			return 1;
+		}else if(aggName.equalsIgnoreCase("MIN")){
+			return 2;
+		}else if(aggName.equalsIgnoreCase("MAX")){
+			return 3;
+		}else if(aggName.equalsIgnoreCase("AVG")){
+			return 4;
+		}else if(aggName.equalsIgnoreCase("COUNT")){
+			return 5;
+		}
+		return -1;
+	}
 
 	public static void main(String[] args) throws ParseException, SQLException {
 
@@ -158,6 +178,20 @@ public class Main {
 						selectItemsAsObject.add(sitem);
 						selectItemsMap.put(sitem.toString(), null);
 					}
+					aggNo = new int[selectItemsAsObject.size()];
+					
+					for (int i = 0; i < selectItemsAsObject.size(); i++) {
+
+						sitem = (SelectExpressionItem) selectItemsAsObject.get(i);
+						selExp = sitem.getExpression();
+						ssitem = sitem.toString();
+
+						if (selExp instanceof Function) {
+							aggName = ((Function) selExp).getName();
+							aggNo[i] = getAggNo(aggName);
+						}
+						
+					}
 
 					e = plainSelect.getWhere();
 					readFromFile();
@@ -180,7 +214,7 @@ public class Main {
 	}
 
 	public static void readFromFile() throws SQLException {
-		 File file = new File("data/" + myTableName + ".csv");
+		File file = new File("data/" + myTableName + ".csv");
 		//File file = new File(myTableName + ".csv");
 
 		reinitializeValues();
@@ -237,32 +271,56 @@ public class Main {
 		// }
 	}
 
+	/*
+	 * sum = 1
+	 * min = 2
+	 * max = 3
+	 * avg = 4
+	 * count = 5
+	 * */
 	private static void printAggregateResult(List<SelectItem> selectItemsAsObject) {
 
 		StringBuilder sb = new StringBuilder();
 		for (int i = 0; i < selectItemsAsObject.size(); i++) {
-
-			sitem = (SelectExpressionItem) selectItemsAsObject.get(i);
-			selExp = sitem.getExpression();
-			ssitem = sitem.toString();
-
-			aggName = ((Function) selExp).getName();
-			if ("SUM".equalsIgnoreCase(aggName)) {
+			
+			if (aggNo[i] == 1) {
 				sb.append(aggSum);
 				sb.append('|');
-			} else if ("MIN".equalsIgnoreCase(aggName)) {
+			} else if (aggNo[i] == 2) {
 				sb.append(aggMin);
 				sb.append('|');
-			} else if ("MAX".equalsIgnoreCase(aggName)) {
+			} else if (aggNo[i] == 3) {
 				sb.append(aggMax);
 				sb.append('|');
-			} else if ("AVG".equalsIgnoreCase(aggName)) {
+			} else if (aggNo[i] == 4) {
 				sb.append(avgTotal / avgCount);
 				sb.append('|');
-			} else if ("COUNT".equalsIgnoreCase(aggName)) {
+			} else if (aggNo[i] == 5) {
 				sb.append(aggCount);
 				sb.append('|');
 			}
+
+//			sitem = (SelectExpressionItem) selectItemsAsObject.get(i);
+//			selExp = sitem.getExpression();
+//			ssitem = sitem.toString();
+//
+//			aggName = ((Function) selExp).getName();
+//			if ("SUM".equalsIgnoreCase(aggName)) {
+//				sb.append(aggSum);
+//				sb.append('|');
+//			} else if ("MIN".equalsIgnoreCase(aggName)) {
+//				sb.append(aggMin);
+//				sb.append('|');
+//			} else if ("MAX".equalsIgnoreCase(aggName)) {
+//				sb.append(aggMax);
+//				sb.append('|');
+//			} else if ("AVG".equalsIgnoreCase(aggName)) {
+//				sb.append(avgTotal / avgCount);
+//				sb.append('|');
+//			} else if ("COUNT".equalsIgnoreCase(aggName)) {
+//				sb.append(aggCount);
+//				sb.append('|');
+//			}
 		}
 
 		sb.setLength(sb.length() - 1);
@@ -270,6 +328,14 @@ public class Main {
 		System.out.println(sb);
 
 	}
+	
+	/*
+	 * sum = 1
+	 * min = 2
+	 * max = 3
+	 * avg = 4
+	 * count = 5
+	 * */
 
 	private static void printToConsole() throws SQLException {
 
@@ -288,27 +354,28 @@ public class Main {
 				aggPrint = true;
 
 				aggregateFunction = (Function) selExp;
-				aggName = aggregateFunction.getName();
+				aggName = aggregateFunction.getName().toUpperCase();
+				
 
-				if ("COUNT".equalsIgnoreCase(aggName)) {
+				if (aggNo[i] == 5   /*"COUNT".equalsIgnoreCase(aggName)*/) {
 					aggCount++;
 
 				} else {
 					aggExpr = aggregateFunction.getParameters().getExpressions().get(0);
 					answer = computeExpression();
 
-					if ("SUM".equalsIgnoreCase(aggName)) {
+					if ( aggNo[i] == 1 /*"SUM".equalsIgnoreCase(aggName)*/) {
 						aggSum += answer.toDouble();
-					} else if ("MIN".equalsIgnoreCase(aggName)) {
+					} else if (aggNo[i] == 2 /*"MIN".equalsIgnoreCase(aggName)*/) {
 						if (answer.toDouble() < aggMin) {
 							aggMin = answer.toDouble();
 						}
-					} else if ("MAX".equalsIgnoreCase(aggName)) {
+					} else if (aggNo[i] == 3 /*"MAX".equalsIgnoreCase(aggName)*/) {
 						if (answer.toDouble() > aggMax) {
 							aggMax = answer.toDouble();
 						}
 
-					} else if ("AVG".equalsIgnoreCase(aggName)) {
+					} else if (aggNo[i] == 4 /*"AVG".equalsIgnoreCase(aggName)*/) {
 						avgCount++;
 						avgTotal += answer.toDouble();
 					}
