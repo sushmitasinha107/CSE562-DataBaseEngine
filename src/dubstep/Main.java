@@ -6,7 +6,6 @@ import java.io.FileNotFoundException;
 import java.io.StringReader;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -27,7 +26,6 @@ import net.sf.jsqlparser.expression.operators.arithmetic.Subtraction;
 import net.sf.jsqlparser.parser.CCJSqlParser;
 import net.sf.jsqlparser.parser.ParseException;
 import net.sf.jsqlparser.schema.Column;
-import net.sf.jsqlparser.schema.PrimitiveType;
 import net.sf.jsqlparser.statement.Statement;
 import net.sf.jsqlparser.statement.create.table.ColDataType;
 import net.sf.jsqlparser.statement.create.table.ColumnDefinition;
@@ -98,10 +96,13 @@ public class Main {
 	public static Function aggregateFunction = null;
 	public static Expression aggExpr = null;
 	public static PrimitiveValue answer = null;
+	public static PrimitiveValue result = null;
 
 	public static Scanner sc = null;
 	public static StringBuilder sbuilder = null;
 
+	public static Column aggExprs[] = null;
+	public static int numAggFunc = 0;
 	public static double aggSum = 0;
 	public static long aggCount = 0;
 	public static double aggMin = Integer.MAX_VALUE;
@@ -110,6 +111,7 @@ public class Main {
 	public static double avgTotal = 0.0;
 	public static int[] aggNo = null;
 
+	
 	public static Boolean print = null;
 	
 	public static int getAggNo(String aggName){
@@ -156,7 +158,6 @@ public class Main {
 						columnDataTypeMapping.put(col.getColumnName(), col.getColDataType());
 						i++;
 					}
-					System.out.println();
 					tableData.setColumnDataTypeMapping(columnDataTypeMapping);
 					tableData.setColumnOrderMapping(columnOrderMapping);
 
@@ -173,27 +174,31 @@ public class Main {
 					columnDataTypeMapping = tableData.getColumnDataTypeMapping();
 
 					selectItemsAsObject = new ArrayList<SelectItem>();
+					aggNo = new int[plainSelect.getSelectItems().size()];
+					aggExprs = new Column[plainSelect.getSelectItems().size()];
 
+					int i = 0;
 					for (SelectItem sitem : plainSelect.getSelectItems()) {
-						selectItemsAsObject.add(sitem);
-						selectItemsMap.put(sitem.toString(), null);
-					}
-					aggNo = new int[selectItemsAsObject.size()];
-					
-					for (int i = 0; i < selectItemsAsObject.size(); i++) {
-
-						sitem = (SelectExpressionItem) selectItemsAsObject.get(i);
-						selExp = sitem.getExpression();
+						
+						selExp = ((SelectExpressionItem) sitem).getExpression();
 						ssitem = sitem.toString();
 
 						if (selExp instanceof Function) {
 							aggName = ((Function) selExp).getName();
 							aggNo[i] = getAggNo(aggName);
+							
+							if(aggNo[i] != 5){
+								aggExprs[i] = (Column) ((Function) selExp).getParameters().getExpressions().get(0);
+							}
+							i++;
+						}else{
+							selectItemsAsObject.add(sitem);
+							selectItemsMap.put(sitem.toString(), null);
 						}
-						
 					}
-
-					e = plainSelect.getWhere();
+					
+					numAggFunc = i;
+										
 					readFromFile();
 
 				} else {
@@ -217,6 +222,7 @@ public class Main {
 		File file = new File("data/" + myTableName + ".csv");
 		//File file = new File(myTableName + ".csv");
 
+		e = plainSelect.getWhere();
 		reinitializeValues();
 
 		try {
@@ -249,10 +255,20 @@ public class Main {
 				if (!(e == null)) {
 					PrimitiveValue ret = eval.eval(e);
 					if ("TRUE".equals(ret.toString())) {
-						printToConsole();
+						if(numAggFunc > 0){
+							printAggToConsole();
+						}
+						else{	
+							printToConsole();
+						}
 					}
 				} else {
-					printToConsole();
+					if(numAggFunc > 0){
+						printAggToConsole();
+					}
+					else{	
+						printToConsole();
+					}
 				}
 
 			} /*
@@ -260,8 +276,8 @@ public class Main {
 				 * after this and not in printToConsole
 				 */
 
-			if (aggPrint)
-				printAggregateResult(selectItemsAsObject);
+			if (numAggFunc > 0)
+				printAggregateResult();
 
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
@@ -278,10 +294,10 @@ public class Main {
 	 * avg = 4
 	 * count = 5
 	 * */
-	private static void printAggregateResult(List<SelectItem> selectItemsAsObject) {
+	private static void printAggregateResult() {
 
 		StringBuilder sb = new StringBuilder();
-		for (int i = 0; i < selectItemsAsObject.size(); i++) {
+		for (int i = 0; i < numAggFunc; i++) {
 			
 			if (aggNo[i] == 1) {
 				sb.append(aggSum);
@@ -299,28 +315,6 @@ public class Main {
 				sb.append(aggCount);
 				sb.append('|');
 			}
-
-//			sitem = (SelectExpressionItem) selectItemsAsObject.get(i);
-//			selExp = sitem.getExpression();
-//			ssitem = sitem.toString();
-//
-//			aggName = ((Function) selExp).getName();
-//			if ("SUM".equalsIgnoreCase(aggName)) {
-//				sb.append(aggSum);
-//				sb.append('|');
-//			} else if ("MIN".equalsIgnoreCase(aggName)) {
-//				sb.append(aggMin);
-//				sb.append('|');
-//			} else if ("MAX".equalsIgnoreCase(aggName)) {
-//				sb.append(aggMax);
-//				sb.append('|');
-//			} else if ("AVG".equalsIgnoreCase(aggName)) {
-//				sb.append(avgTotal / avgCount);
-//				sb.append('|');
-//			} else if ("COUNT".equalsIgnoreCase(aggName)) {
-//				sb.append(aggCount);
-//				sb.append('|');
-//			}
 		}
 
 		if(sb.length() > 0)
@@ -338,52 +332,50 @@ public class Main {
 	 * count = 5
 	 * */
 
+	private static void printAggToConsole() throws SQLException {
+
+		print = false;
+		aggPrint = true;
+
+
+		for(int i = 0; i < numAggFunc; i++){
+			if (aggNo[i] == 5) {
+				aggCount++;
+
+			} else {
+				aggExpr = (Expression) aggExprs[i];
+				answer = computeExpression();
+
+				if (aggNo[i] == 1) {
+					aggSum += answer.toDouble();
+				} else if (aggNo[i] == 2 ) {
+					if (answer.toDouble() < aggMin) {
+						aggMin = answer.toDouble();
+					}
+				} else if (aggNo[i] == 3 ) {
+					if (answer.toDouble() > aggMax) {
+						aggMax = answer.toDouble();
+					}
+
+				} else if (aggNo[i] == 4 ) {
+					avgCount++;
+					avgTotal += answer.toDouble();
+				}
+			}
+		
+		}
+		
+	}
+
 	private static void printToConsole() throws SQLException {
 
 		sbuilder = new StringBuilder();
 
-		print = true;
 		for (int i = 0; i < selectItemsAsObject.size(); i++) {
 
 			SelectExpressionItem sitem = (SelectExpressionItem) selectItemsAsObject.get(i);
-			Expression selExp = sitem.getExpression();
-			print = true;
-			aggPrint = false;
-			if (selExp instanceof Function) {
 
-				print = false;
-				aggPrint = true;
-
-				aggregateFunction = (Function) selExp;
-				aggName = aggregateFunction.getName().toUpperCase();
-				
-
-				if (aggNo[i] == 5   /*"COUNT".equalsIgnoreCase(aggName)*/) {
-					aggCount++;
-
-				} else {
-					aggExpr = aggregateFunction.getParameters().getExpressions().get(0);
-					answer = computeExpression();
-
-					if ( aggNo[i] == 1 /*"SUM".equalsIgnoreCase(aggName)*/) {
-						aggSum += answer.toDouble();
-					} else if (aggNo[i] == 2 /*"MIN".equalsIgnoreCase(aggName)*/) {
-						if (answer.toDouble() < aggMin) {
-							aggMin = answer.toDouble();
-						}
-					} else if (aggNo[i] == 3 /*"MAX".equalsIgnoreCase(aggName)*/) {
-						if (answer.toDouble() > aggMax) {
-							aggMax = answer.toDouble();
-						}
-
-					} else if (aggNo[i] == 4 /*"AVG".equalsIgnoreCase(aggName)*/) {
-						avgCount++;
-						avgTotal += answer.toDouble();
-					}
-				}
-			}
-
-			else if (selExp instanceof Addition || selExp instanceof Subtraction || selExp instanceof Multiplication
+			if (selExp instanceof Addition || selExp instanceof Subtraction || selExp instanceof Multiplication
 					|| selExp instanceof Division) {
 
 				Eval eval = new Eval() {
@@ -396,7 +388,7 @@ public class Main {
 					}
 				};
 
-				PrimitiveValue result = eval.eval(selExp);
+				result = eval.eval(selExp);
 				sbuilder.append(result);
 
 			} else {
@@ -408,9 +400,9 @@ public class Main {
 				sbuilder.append("|");
 		}
 
-		if (print) {
+		
 			System.out.println(sbuilder.toString());
-		}
+		
 	}
 
 	private static PrimitiveValue computeExpression() throws SQLException {
