@@ -1,8 +1,11 @@
-
 package dubstep;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.StringReader;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -98,7 +101,7 @@ public class Main {
 	public static PrimitiveValue answer = null;
 	public static PrimitiveValue result = null;
 
-	public static Scanner sc = null;
+	//public static Scanner sc = null;
 	public static StringBuilder sbuilder = null;
 
 	public static Column aggExprs[] = null;
@@ -129,14 +132,16 @@ public class Main {
 		return -1;
 	}
 
-	public static void main(String[] args) throws ParseException, SQLException {
+	public static void main(String[] args) throws ParseException, SQLException, IOException {
 
 		System.out.print("$>");
-		sc = new Scanner(System.in);
+		BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
+		//sc = new Scanner(System.in);
 
-		while (sc.hasNext()) {
+		//inputString = br.readLine();
+		while ((inputString = br.readLine()) != null) {
 
-			inputString = sc.nextLine();
+			//inputString = sc.nextLine();
 			input = new StringReader(inputString);
 			parser = new CCJSqlParser(input);
 
@@ -218,19 +223,21 @@ public class Main {
 		aggCount = 0;
 	}
 
-	public static void readFromFile() throws SQLException {
+	public static void readFromFile() throws SQLException, IOException {
 		File file = new File("data/" + myTableName + ".csv");
 		//File file = new File(myTableName + ".csv");
 
+		BufferedReader br = new BufferedReader(new FileReader(file));
 		e = plainSelect.getWhere();
 		reinitializeValues();
 
+		//String currentLine = "";
 		try {
-			Scanner sc = new Scanner(file);
-			while (sc.hasNext()) {
+			//Scanner sc = new Scanner(file);
+			while ((newRow = br.readLine()) != null) {
 
 				/* read line from csv file */
-				newRow = sc.nextLine();
+				//newRow = sc.nextLine();
 				/* values array have individual column values from the file */
 				values = newRow.split("\\|", -1);
 
@@ -282,9 +289,11 @@ public class Main {
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
 		}
-		// finally{
+		 finally{
 		// sc.close();
-		// }
+			 if(br != null)
+				 br.close();
+		 }
 	}
 
 	/*
