@@ -289,11 +289,11 @@ public class Main {
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
 		}
-		 finally{
-		// sc.close();
-			 if(br != null)
-				 br.close();
-		 }
+//		 finally{
+//		// sc.close();
+//			 if(br != null)
+//				 br.close();
+//		 }
 	}
 
 	/*
