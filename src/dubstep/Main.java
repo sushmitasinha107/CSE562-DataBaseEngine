@@ -77,7 +77,9 @@ public class Main {
 	public static Map<String, ColDataType> columnDataTypeMapping = new HashMap<String, ColDataType>();
 
 	public static List<ColumnDefinition> columnNames = null;
-	public static List<SelectItem> selectItemsAsObject = null;
+	//public static List<SelectItem> selectItemsAsObject = null;
+	public static SelectItem[] selectItemsAsObject = null;
+	public static int selCols = 0;
 
 	public static String myTableName = "";
 	public static String inputString = "";
@@ -170,6 +172,8 @@ public class Main {
 
 				} else if (query instanceof Select) {
 
+//					System.out.println("started");
+//					double start = System.currentTimeMillis();
 					select = (Select) query;
 					plainSelect = (PlainSelect) select.getSelectBody();
 
@@ -178,11 +182,12 @@ public class Main {
 					columnOrderMapping = tableData.getColumnOrderMapping();
 					columnDataTypeMapping = tableData.getColumnDataTypeMapping();
 
-					selectItemsAsObject = new ArrayList<SelectItem>();
+					//selectItemsAsObject = new ArrayList<SelectItem>();
+					selectItemsAsObject = new SelectItem[plainSelect.getSelectItems().size()];
 					aggNo = new int[plainSelect.getSelectItems().size()];
 					aggExprs = new Column[plainSelect.getSelectItems().size()];
 
-					int i = 0;
+					int i = 0, j = 0;
 					for (SelectItem sitem : plainSelect.getSelectItems()) {
 						
 						selExp = ((SelectExpressionItem) sitem).getExpression();
@@ -197,14 +202,19 @@ public class Main {
 							}
 							i++;
 						}else{
-							selectItemsAsObject.add(sitem);
+							selectItemsAsObject[j] = sitem;
+							j++;
+							//selectItemsAsObject.add(sitem);
 							selectItemsMap.put(sitem.toString(), null);
 						}
 					}
-					
+					selCols = j;
 					numAggFunc = i;
 										
 					readFromFile();
+					
+//					double end = System.currentTimeMillis();
+//					System.out.println("time: " + (end-start)/1000);
 
 				} else {
 					// System.out.println("Not of type select");
@@ -380,9 +390,9 @@ public class Main {
 
 		sbuilder = new StringBuilder();
 
-		for (int i = 0; i < selectItemsAsObject.size(); i++) {
+		for (int i = 0; i < selCols; i++) {
 
-			SelectExpressionItem sitem = (SelectExpressionItem) selectItemsAsObject.get(i);
+			SelectExpressionItem sitem = (SelectExpressionItem) selectItemsAsObject[i];
 
 			if (selExp instanceof Addition || selExp instanceof Subtraction || selExp instanceof Multiplication
 					|| selExp instanceof Division) {
@@ -405,7 +415,7 @@ public class Main {
 				sbuilder.append(values[idx]);
 			}
 
-			if (i != selectItemsAsObject.size() - 1)
+			if (i != selCols - 1)
 				sbuilder.append("|");
 		}
 
