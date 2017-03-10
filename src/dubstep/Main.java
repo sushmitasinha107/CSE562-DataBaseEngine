@@ -220,6 +220,10 @@ public class Main {
 		avgCount = 0;
 		aggAns = 0.0;
 		aggCount = 0;
+		aggSum = 0;
+		aggMax = Integer.MIN_VALUE;
+		aggMin = Integer.MAX_VALUE;
+		
 	}
 
 	public static void readFromFile() throws SQLException, IOException {
