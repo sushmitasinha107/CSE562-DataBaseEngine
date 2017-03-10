@@ -46,7 +46,7 @@ public class Main {
 
 	public static HashMap<String, SelectItem> selectItemsMap = new HashMap<>();
 
-	public enum AggFunctions { SUM, MIN, MAX, AVG, COUNT }; 
+	//public enum AggFunctions { SUM, MIN, MAX, AVG, COUNT }; 
 	
 	private class TableData {
 		Map<String, Integer> columnOrderMapping;
@@ -120,15 +120,16 @@ public class Main {
 	public static Boolean print = null;
 	
 	public static int getAggNo(String aggName){
-		if(aggName.equalsIgnoreCase("SUM")){
+		aggName = aggName.toUpperCase();
+		if(aggName.equals("SUM")){
 			return 1;
-		}else if(aggName.equalsIgnoreCase("MIN")){
+		}else if(aggName.equals("MIN")){
 			return 2;
-		}else if(aggName.equalsIgnoreCase("MAX")){
+		}else if(aggName.equals("MAX")){
 			return 3;
-		}else if(aggName.equalsIgnoreCase("AVG")){
+		}else if(aggName.equals("AVG")){
 			return 4;
-		}else if(aggName.equalsIgnoreCase("COUNT")){
+		}else if(aggName.equals("COUNT")){
 			return 5;
 		}
 		return -1;
@@ -231,6 +232,10 @@ public class Main {
 		avgCount = 0;
 		aggAns = 0.0;
 		aggCount = 0;
+		aggSum = 0;
+		aggMax = Integer.MIN_VALUE;
+		aggMin = Integer.MAX_VALUE;
+		
 	}
 
 	public static void readFromFile() throws SQLException, IOException {
@@ -273,7 +278,7 @@ public class Main {
 					PrimitiveValue ret = eval.eval(e);
 					if ("TRUE".equals(ret.toString())) {
 						if(numAggFunc > 0){
-							printAggToConsole();
+							computeAggregate();
 						}
 						else{	
 							printToConsole();
@@ -281,7 +286,7 @@ public class Main {
 					}
 				} else {
 					if(numAggFunc > 0){
-						printAggToConsole();
+						computeAggregate();
 					}
 					else{	
 						printToConsole();
@@ -351,7 +356,7 @@ public class Main {
 	 * count = 5
 	 * */
 
-	private static void printAggToConsole() throws SQLException {
+	private static void computeAggregate() throws SQLException {
 
 		print = false;
 		aggPrint = true;
