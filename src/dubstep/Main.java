@@ -44,10 +44,11 @@ public class Main {
 	public static HashMap<String, SelectItem> selectItemsMap = new HashMap<>();
 
 	public enum AggFunctions { SUM, MIN, MAX, AVG, COUNT }; 
+	public enum SQLDataType {string, varchar, sqlchar, sqlint, decimal, date};
 	
 	private class TableData {
 		Map<String, Integer> columnOrderMapping;
-		Map<String, ColDataType> columnDataTypeMapping;
+		Map<String, String> columnDataTypeMapping;		
 
 		public Map<String, Integer> getColumnOrderMapping() {
 			return columnOrderMapping;
@@ -57,12 +58,12 @@ public class Main {
 			this.columnOrderMapping = columnOrderMapping;
 		}
 
-		public Map<String, ColDataType> getColumnDataTypeMapping() {
+		public Map<String, String> getColumnDataTypeMapping() {
 			return columnDataTypeMapping;
 		}
 
-		public void setColumnDataTypeMapping(Map<String, ColDataType> columnDataTypeMapping) {
-			this.columnDataTypeMapping = columnDataTypeMapping;
+		public void setColumnDataTypeMapping(Map<String, String> columnDataTypeMapping2) {
+			this.columnDataTypeMapping = columnDataTypeMapping2;
 		}
 	}
 
@@ -71,7 +72,7 @@ public class Main {
 
 	public static Map<String, TableData> tableMapping = new HashMap<String, TableData>();
 	public static Map<String, Integer> columnOrderMapping = new HashMap<String, Integer>();
-	public static Map<String, ColDataType> columnDataTypeMapping = new HashMap<String, ColDataType>();
+	public static Map<String, String> columnDataTypeMapping = new HashMap<String, String>();
 
 	public static List<ColumnDefinition> columnNames = null;
 	//public static List<SelectItem> selectItemsAsObject = null;
@@ -113,6 +114,7 @@ public class Main {
 	public static int[] aggNo = null;
 
 	public static AggFunctions aggFunctions;
+	public static SQLDataType sqlDataType;
 	public static Boolean print = null;
 	
 	public static int getAggNo(AggFunctions aggName){
@@ -128,6 +130,21 @@ public class Main {
 			return 5;
 		}
 		return -1;
+	}
+	
+	private static PrimitiveValue getReturnType(SQLDataType ptype , String value) {
+
+		if (ptype  == SQLDataType.sqlint) {
+			return new LongValue(value);
+		} else if (ptype == SQLDataType.varchar || ptype == SQLDataType.sqlchar || ptype == SQLDataType.string) {
+			return new StringValue(value);
+		} else if (ptype == SQLDataType.date) {
+			return new DateValue(value);
+		} else if (ptype == SQLDataType.decimal) {
+			return new DoubleValue(value);
+		}
+
+		return null;
 	}
 
 	public static void main(String[] args) throws ParseException, SQLException, IOException {
@@ -158,7 +175,13 @@ public class Main {
 					int i = 0;
 					for (ColumnDefinition col : columnNames) {
 						columnOrderMapping.put(col.getColumnName(), i);
-						columnDataTypeMapping.put(col.getColumnName(), col.getColDataType());
+						String dtype = col.getColDataType().getDataType();
+						if(dtype.equals("int")){
+							dtype = "sqlint";
+						}else if(dtype.equals("char")){
+							dtype = "sqlchar";
+						}
+						columnDataTypeMapping.put(col.getColumnName(), dtype);
 						i++;
 					}
 					tableData.setColumnDataTypeMapping(columnDataTypeMapping);
@@ -256,9 +279,10 @@ public class Main {
 						 * get this column's datatype so that we know what to
 						 * return
 						 */
-						ColDataType ptype = columnDataTypeMapping.get(c.toString());
+						String ptype = columnDataTypeMapping.get(c.toString());
 
-						return getReturnType(ptype, values[idx]);
+						//return getReturnType(ptype, values[idx]);
+						return getReturnType(SQLDataType.valueOf(ptype), values[idx]);
 					}
 				};
 
@@ -393,9 +417,10 @@ public class Main {
 					public PrimitiveValue eval(Column c) {
 
 						int idx = columnOrderMapping.get(c.toString());
-						ColDataType ptype = columnDataTypeMapping.get(c.toString());
+						String ptype = columnDataTypeMapping.get(c.toString());
 
-						return getReturnType(ptype, values[idx]);
+						//return getReturnType(ptype, values[idx]);
+						return getReturnType(SQLDataType.valueOf(ptype), values[idx]);
 					}
 				};
 
@@ -422,9 +447,10 @@ public class Main {
 			public PrimitiveValue eval(Column c) {
 
 				int idx = columnOrderMapping.get(c.toString());
-				ColDataType ptype = columnDataTypeMapping.get(c.toString());
+				String ptype = columnDataTypeMapping.get(c.toString());
 
-				return getReturnType(ptype, values[idx]);
+				//return getReturnType(ptype, values[idx]);
+				return getReturnType(SQLDataType.valueOf(ptype), values[idx]);
 			}
 		};
 
@@ -433,20 +459,6 @@ public class Main {
 		return result;
 	}
 
-	private static PrimitiveValue getReturnType(ColDataType ptype, String value) {
-
-		if (ptype.toString().equalsIgnoreCase("int")) {
-			return new LongValue(value);
-		} else if (ptype.toString().equalsIgnoreCase("varchar") || ptype.toString().equalsIgnoreCase("char")
-				|| ptype.toString().equalsIgnoreCase("string")) {
-			return new StringValue(value);
-		} else if (ptype.toString().equalsIgnoreCase("date")) {
-			return new DateValue(value);
-		} else if (ptype.toString().equalsIgnoreCase("decimal")) {
-			return new DoubleValue(value);
-		}
-
-		return null;
-	}
+	
 
 }
