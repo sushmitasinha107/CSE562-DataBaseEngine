@@ -5,7 +5,6 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.StringReader;
@@ -14,10 +13,6 @@ import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import org.apache.commons.csv.CSVFormat;
-import org.apache.commons.csv.CSVParser;
-import org.apache.commons.csv.CSVRecord;
 
 import net.sf.jsqlparser.eval.Eval;
 import net.sf.jsqlparser.expression.DateValue;
@@ -91,7 +86,7 @@ public class Main {
 	public static String newRow = "";
 	public static String ssitem = "";
 	public static String aggName = "";
-	//public static String[] values = null;
+	public static String[] values = null;
 
 	public static StringReader input = null;
 
@@ -123,8 +118,6 @@ public class Main {
 	public static AggFunctions aggFunctions;
 	public static SQLDataType sqlDataType;
 	public static Boolean print = null;
-	
-	public static CSVRecord csvRecord = null;
 	
 	public static int getAggNo(AggFunctions aggName){
 		if(aggName == AggFunctions.SUM){
@@ -265,15 +258,12 @@ public class Main {
 	}
 
 	public static void readFromFile() throws SQLException, IOException {
-		//File file = new File("data/" + myTableName + ".csv");
+		File file = new File("data/" + myTableName + ".csv");
 		//File file = new File(myTableName + ".csv");
-		
-		CSVParser parser = new CSVParser(new FileReader("data/" + myTableName + ".csv"), CSVFormat.newFormat('|'));
-		//CSVParser parser = new CSVParser(new FileReader(myTableName + ".csv"), CSVFormat.newFormat('|'));
 
-//		FileInputStream fis = new FileInputStream(file);
-//		BufferedInputStream bis = new BufferedInputStream(fis, 32768);
-//		BufferedReader br = new BufferedReader(new InputStreamReader(bis, StandardCharsets.UTF_8));
+		FileInputStream fis = new FileInputStream(file);
+		BufferedInputStream bis = new BufferedInputStream(fis, 32768);
+		BufferedReader br = new BufferedReader(new InputStreamReader(bis, StandardCharsets.UTF_8));
 		
 		//BufferedReader br = new BufferedReader(new FileReader(file));
 		e = plainSelect.getWhere();
@@ -283,14 +273,12 @@ public class Main {
 		
 		try {
 			//Scanner sc = new Scanner(file);
-			//while ((newRow = br.readLine()) != null) {
-			for (CSVRecord csvR : parser) {
-				csvRecord = csvR;
+			while ((newRow = br.readLine()) != null) {
 
 				/* read line from csv file */
 				//newRow = sc.nextLine();
 				/* values array have individual column values from the file */
-				//values = newRow.split("\\|", -1);
+				values = newRow.split("\\|", -1);
 
 				/* where clause evaluation */
 				
@@ -322,7 +310,7 @@ public class Main {
 			if (numAggFunc > 0)
 				printAggregateResult();
 
-		} catch (Exception e) {
+		} catch (FileNotFoundException e) {
 			e.printStackTrace();
 		}
 //		 finally{
@@ -429,7 +417,7 @@ public class Main {
 						String ptype = columnDataTypeMapping.get(c.toString());
 
 						//return getReturnType(ptype, values[idx]);
-						return getReturnType(SQLDataType.valueOf(ptype), csvRecord.get(idx));
+						return getReturnType(SQLDataType.valueOf(ptype), values[idx]);
 					}
 				};
 
@@ -438,7 +426,7 @@ public class Main {
 
 			} else {
 				int idx = columnOrderMapping.get(sitem.toString());
-				sbuilder.append(csvRecord.get(idx));
+				sbuilder.append(values[idx]);
 			}
 
 			if (i != selCols - 1)
@@ -457,7 +445,7 @@ public class Main {
 			String ptype = columnDataTypeMapping.get(c.toString());
 
 			//return getReturnType(ptype, values[idx]);
-			return getReturnType(SQLDataType.valueOf(ptype), csvRecord.get(idx));
+			return getReturnType(SQLDataType.valueOf(ptype), values[idx]);
 		}
 	};
 	static PrimitiveValue expResult = null; 
