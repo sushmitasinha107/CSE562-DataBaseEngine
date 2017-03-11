@@ -15,6 +15,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.commons.csv.CSVFormat;
+import org.apache.commons.csv.CSVParser;
+import org.apache.commons.csv.CSVRecord;
+
 import net.sf.jsqlparser.eval.Eval;
 import net.sf.jsqlparser.expression.DateValue;
 import net.sf.jsqlparser.expression.DoubleValue;
@@ -87,7 +91,7 @@ public class Main {
 	public static String newRow = "";
 	public static String ssitem = "";
 	public static String aggName = "";
-	public static String[] values = null;
+	//public static String[] values = null;
 
 	public static StringReader input = null;
 
@@ -119,6 +123,8 @@ public class Main {
 	public static AggFunctions aggFunctions;
 	public static SQLDataType sqlDataType;
 	public static Boolean print = null;
+	
+	public static CSVRecord csvRecord = null;
 	
 	public static int getAggNo(AggFunctions aggName){
 		if(aggName == AggFunctions.SUM){
@@ -259,45 +265,32 @@ public class Main {
 	}
 
 	public static void readFromFile() throws SQLException, IOException {
-		File file = new File("data/" + myTableName + ".csv");
+		//File file = new File("data/" + myTableName + ".csv");
 		//File file = new File(myTableName + ".csv");
+		
+		CSVParser parser = new CSVParser(new FileReader("data/" + myTableName + ".csv"), CSVFormat.newFormat('|'));
+		//CSVParser parser = new CSVParser(new FileReader(myTableName + ".csv"), CSVFormat.newFormat('|'));
 
-		FileInputStream fis = new FileInputStream(file);
-		BufferedInputStream bis = new BufferedInputStream(fis, 32768);
-		BufferedReader br = new BufferedReader(new InputStreamReader(bis, StandardCharsets.UTF_8));
+//		FileInputStream fis = new FileInputStream(file);
+//		BufferedInputStream bis = new BufferedInputStream(fis, 32768);
+//		BufferedReader br = new BufferedReader(new InputStreamReader(bis, StandardCharsets.UTF_8));
 		
 		//BufferedReader br = new BufferedReader(new FileReader(file));
 		e = plainSelect.getWhere();
 		reinitializeValues();
 
-		Eval eval = new Eval() {
-			public PrimitiveValue eval(Column c) {
-				/*
-				 * get this column's index mapping so that we can get
-				 * the value from the values array
-				 */
-				int idx = columnOrderMapping.get(c.toString());
-				/*
-				 * get this column's datatype so that we know what to
-				 * return
-				 */
-				String ptype = columnDataTypeMapping.get(c.toString());
-
-				//return getReturnType(ptype, values[idx]);
-				return getReturnType(SQLDataType.valueOf(ptype), values[idx]);
-			}
-		};
-
 		PrimitiveValue ret = null;
 		
 		try {
 			//Scanner sc = new Scanner(file);
-			while ((newRow = br.readLine()) != null) {
+			//while ((newRow = br.readLine()) != null) {
+			for (CSVRecord csvR : parser) {
+				csvRecord = csvR;
 
 				/* read line from csv file */
 				//newRow = sc.nextLine();
 				/* values array have individual column values from the file */
-				values = newRow.split("\\|", -1);
+				//values = newRow.split("\\|", -1);
 
 				/* where clause evaluation */
 				
@@ -329,7 +322,7 @@ public class Main {
 			if (numAggFunc > 0)
 				printAggregateResult();
 
-		} catch (FileNotFoundException e) {
+		} catch (Exception e) {
 			e.printStackTrace();
 		}
 //		 finally{
@@ -436,7 +429,7 @@ public class Main {
 						String ptype = columnDataTypeMapping.get(c.toString());
 
 						//return getReturnType(ptype, values[idx]);
-						return getReturnType(SQLDataType.valueOf(ptype), values[idx]);
+						return getReturnType(SQLDataType.valueOf(ptype), csvRecord.get(idx));
 					}
 				};
 
@@ -445,7 +438,7 @@ public class Main {
 
 			} else {
 				int idx = columnOrderMapping.get(sitem.toString());
-				sbuilder.append(values[idx]);
+				sbuilder.append(csvRecord.get(idx));
 			}
 
 			if (i != selCols - 1)
@@ -464,7 +457,7 @@ public class Main {
 			String ptype = columnDataTypeMapping.get(c.toString());
 
 			//return getReturnType(ptype, values[idx]);
-			return getReturnType(SQLDataType.valueOf(ptype), values[idx]);
+			return getReturnType(SQLDataType.valueOf(ptype), csvRecord.get(idx));
 		}
 	};
 	static PrimitiveValue expResult = null; 
