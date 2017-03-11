@@ -1,12 +1,15 @@
 package dubstep;
 
+import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.StringReader;
+import java.nio.charset.StandardCharsets;
 import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.List;
@@ -190,6 +193,8 @@ public class Main {
 					tableMapping.put(myTableName, tableData);
 
 				} else if (query instanceof Select) {
+					
+					//double start = System.currentTimeMillis();
 
 					select = (Select) query;
 					plainSelect = (PlainSelect) select.getSelectBody();
@@ -228,6 +233,10 @@ public class Main {
 					numAggFunc = i;
 										
 					readFromFile();
+					
+//					double end = System.currentTimeMillis();
+//					System.out.println("time: " + (end - start)/1000);
+					
 				} else {
 					// System.out.println("Not of type select");
 				}
@@ -253,8 +262,11 @@ public class Main {
 		File file = new File("data/" + myTableName + ".csv");
 		//File file = new File(myTableName + ".csv");
 
-		BufferedReader br = new BufferedReader(new FileReader(file));
-		//BufferedInputStream br = new BufferedInputStream(new FileInputStream(file));
+		FileInputStream fis = new FileInputStream(file);
+		BufferedInputStream bis = new BufferedInputStream(fis, 32768);
+		BufferedReader br = new BufferedReader(new InputStreamReader(bis, StandardCharsets.UTF_8));
+		
+		//BufferedReader br = new BufferedReader(new FileReader(file));
 		e = plainSelect.getWhere();
 		reinitializeValues();
 
