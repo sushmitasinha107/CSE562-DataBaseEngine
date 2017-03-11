@@ -5,6 +5,7 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.StringReader;
@@ -259,13 +260,13 @@ public class Main {
 
 	public static void readFromFile() throws SQLException, IOException {
 		File file = new File("data/" + myTableName + ".csv");
-		//File file = new File(myTableName + ".csv");
+		File file = new File(myTableName + ".csv");
 
-		FileInputStream fis = new FileInputStream(file);
-		BufferedInputStream bis = new BufferedInputStream(fis, 65536);
-		BufferedReader br = new BufferedReader(new InputStreamReader(bis, StandardCharsets.UTF_8));
+//		FileInputStream fis = new FileInputStream(file);
+//		BufferedInputStream bis = new BufferedInputStream(fis, 65536);
+//		BufferedReader br = new BufferedReader(new InputStreamReader(bis, StandardCharsets.UTF_8));
 		
-		//BufferedReader br = new BufferedReader(new FileReader(file));
+		BufferedReader br = new BufferedReader(new FileReader(file));
 		e = plainSelect.getWhere();
 		reinitializeValues();
 
