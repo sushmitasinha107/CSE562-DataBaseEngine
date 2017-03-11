@@ -254,9 +254,27 @@ public class Main {
 		//File file = new File(myTableName + ".csv");
 
 		BufferedReader br = new BufferedReader(new FileReader(file));
+		//BufferedInputStream br = new BufferedInputStream(new FileInputStream(file));
 		e = plainSelect.getWhere();
 		reinitializeValues();
 
+		Eval eval = new Eval() {
+			public PrimitiveValue eval(Column c) {
+				/*
+				 * get this column's index mapping so that we can get
+				 * the value from the values array
+				 */
+				int idx = columnOrderMapping.get(c.toString());
+				/*
+				 * get this column's datatype so that we know what to
+				 * return
+				 */
+				String ptype = columnDataTypeMapping.get(c.toString());
+
+				//return getReturnType(ptype, values[idx]);
+				return getReturnType(SQLDataType.valueOf(ptype), values[idx]);
+			}
+		};
 		//String currentLine = "";
 		try {
 			//Scanner sc = new Scanner(file);
@@ -268,23 +286,7 @@ public class Main {
 				values = newRow.split("\\|", -1);
 
 				/* where clause evaluation */
-				Eval eval = new Eval() {
-					public PrimitiveValue eval(Column c) {
-						/*
-						 * get this column's index mapping so that we can get
-						 * the value from the values array
-						 */
-						int idx = columnOrderMapping.get(c.toString());
-						/*
-						 * get this column's datatype so that we know what to
-						 * return
-						 */
-						String ptype = columnDataTypeMapping.get(c.toString());
-
-						//return getReturnType(ptype, values[idx]);
-						return getReturnType(SQLDataType.valueOf(ptype), values[idx]);
-					}
-				};
+				
 
 				if (!(e == null)) {
 					PrimitiveValue ret = eval.eval(e);
@@ -441,18 +443,29 @@ public class Main {
 		
 	}
 
+	static Eval eval = new Eval() {
+		public PrimitiveValue eval(Column c) {
+
+			int idx = columnOrderMapping.get(c.toString());
+			String ptype = columnDataTypeMapping.get(c.toString());
+
+			//return getReturnType(ptype, values[idx]);
+			return getReturnType(SQLDataType.valueOf(ptype), values[idx]);
+		}
+	};
+	
 	private static PrimitiveValue computeExpression() throws SQLException {
 
-		Eval eval = new Eval() {
-			public PrimitiveValue eval(Column c) {
-
-				int idx = columnOrderMapping.get(c.toString());
-				String ptype = columnDataTypeMapping.get(c.toString());
-
-				//return getReturnType(ptype, values[idx]);
-				return getReturnType(SQLDataType.valueOf(ptype), values[idx]);
-			}
-		};
+//		Eval eval = new Eval() {
+//			public PrimitiveValue eval(Column c) {
+//
+//				int idx = columnOrderMapping.get(c.toString());
+//				String ptype = columnDataTypeMapping.get(c.toString());
+//
+//				//return getReturnType(ptype, values[idx]);
+//				return getReturnType(SQLDataType.valueOf(ptype), values[idx]);
+//			}
+//		};
 
 		PrimitiveValue result = eval.eval(aggExpr);
 
