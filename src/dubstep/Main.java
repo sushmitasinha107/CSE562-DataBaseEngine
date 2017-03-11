@@ -262,7 +262,7 @@ public class Main {
 		//File file = new File(myTableName + ".csv");
 
 		FileInputStream fis = new FileInputStream(file);
-		BufferedInputStream bis = new BufferedInputStream(fis, 32768);
+		BufferedInputStream bis = new BufferedInputStream(fis, 65536);
 		BufferedReader br = new BufferedReader(new InputStreamReader(bis, StandardCharsets.UTF_8));
 		
 		//BufferedReader br = new BufferedReader(new FileReader(file));
