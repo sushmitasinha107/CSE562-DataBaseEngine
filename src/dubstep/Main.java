@@ -11,6 +11,7 @@ import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
 import net.sf.jsqlparser.eval.Eval;
 import net.sf.jsqlparser.expression.DateValue;
 import net.sf.jsqlparser.expression.DoubleValue;
@@ -27,7 +28,6 @@ import net.sf.jsqlparser.parser.CCJSqlParser;
 import net.sf.jsqlparser.parser.ParseException;
 import net.sf.jsqlparser.schema.Column;
 import net.sf.jsqlparser.statement.Statement;
-import net.sf.jsqlparser.statement.create.table.ColDataType;
 import net.sf.jsqlparser.statement.create.table.ColumnDefinition;
 import net.sf.jsqlparser.statement.create.table.CreateTable;
 import net.sf.jsqlparser.statement.select.PlainSelect;
@@ -275,7 +275,9 @@ public class Main {
 				return getReturnType(SQLDataType.valueOf(ptype), values[idx]);
 			}
 		};
-		//String currentLine = "";
+
+		PrimitiveValue ret = null;
+		
 		try {
 			//Scanner sc = new Scanner(file);
 			while ((newRow = br.readLine()) != null) {
@@ -289,7 +291,7 @@ public class Main {
 				
 
 				if (!(e == null)) {
-					PrimitiveValue ret = eval.eval(e);
+					ret = eval.eval(e);
 					if ("TRUE".equals(ret.toString())) {
 						if(numAggFunc > 0){
 							printAggToConsole();
@@ -453,6 +455,7 @@ public class Main {
 			return getReturnType(SQLDataType.valueOf(ptype), values[idx]);
 		}
 	};
+	static PrimitiveValue expResult = null; 
 	
 	private static PrimitiveValue computeExpression() throws SQLException {
 
@@ -467,9 +470,9 @@ public class Main {
 //			}
 //		};
 
-		PrimitiveValue result = eval.eval(aggExpr);
+		expResult = eval.eval(aggExpr);
 
-		return result;
+		return expResult;
 	}
 
 	
