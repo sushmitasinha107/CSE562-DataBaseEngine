@@ -260,7 +260,7 @@ public class Main {
 
 	public static void readFromFile() throws SQLException, IOException {
 		File file = new File("data/" + myTableName + ".csv");
-		File file = new File(myTableName + ".csv");
+		//File file = new File(myTableName + ".csv");
 
 //		FileInputStream fis = new FileInputStream(file);
 //		BufferedInputStream bis = new BufferedInputStream(fis, 65536);
