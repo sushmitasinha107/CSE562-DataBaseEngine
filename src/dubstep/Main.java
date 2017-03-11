@@ -2,6 +2,7 @@ package dubstep;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
@@ -253,7 +254,7 @@ public class Main {
 		File file = new File("data/" + myTableName + ".csv");
 		//File file = new File(myTableName + ".csv");
 
-		BufferedReader br = new BufferedReader(new FileReader(file));
+		BufferedReader br = new BufferedReader(new InputStreamReader(new FileInputStream(file)));
 		e = plainSelect.getWhere();
 		reinitializeValues();
 
