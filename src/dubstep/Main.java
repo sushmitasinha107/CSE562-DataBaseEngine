@@ -1,19 +1,28 @@
 package dubstep;
+<<<<<<< HEAD
+=======
+
+import java.io.BufferedInputStream;
+>>>>>>> db78387f34036945c4aa581dbb77596ab17fa382
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.StringReader;
+import java.nio.charset.StandardCharsets;
 import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+<<<<<<< HEAD
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
 
+=======
+>>>>>>> db78387f34036945c4aa581dbb77596ab17fa382
 import net.sf.jsqlparser.eval.Eval;
 import net.sf.jsqlparser.expression.DateValue;
 import net.sf.jsqlparser.expression.DoubleValue;
@@ -30,7 +39,6 @@ import net.sf.jsqlparser.parser.CCJSqlParser;
 import net.sf.jsqlparser.parser.ParseException;
 import net.sf.jsqlparser.schema.Column;
 import net.sf.jsqlparser.statement.Statement;
-import net.sf.jsqlparser.statement.create.table.ColDataType;
 import net.sf.jsqlparser.statement.create.table.ColumnDefinition;
 import net.sf.jsqlparser.statement.create.table.CreateTable;
 import net.sf.jsqlparser.statement.select.PlainSelect;
@@ -213,8 +221,14 @@ public class Main {
 										
 					readFromFile();
 					
+<<<<<<< HEAD
 					//double end = System.currentTimeMillis();
 					//System.out.println("time: " + (end - start)/1000);
+=======
+//					double end = System.currentTimeMillis();
+//					System.out.println("time: " + (end - start)/1000);
+					
+>>>>>>> db78387f34036945c4aa581dbb77596ab17fa382
 				} else {
 					// System.out.println("Not of type select");
 				}
@@ -235,7 +249,14 @@ public class Main {
 	public static void readFromFile() throws SQLException, IOException {
 		//File file = new File("data/" + myTableName + ".csv");
 		//File file = new File(myTableName + ".csv");
+<<<<<<< HEAD
 		CSVParser parser = new CSVParser(new FileReader("data/" + myTableName + ".csv"), CSVFormat.newFormat('|'));
+=======
+
+		FileInputStream fis = new FileInputStream(file);
+		BufferedInputStream bis = new BufferedInputStream(fis, 32768);
+		BufferedReader br = new BufferedReader(new InputStreamReader(bis, StandardCharsets.UTF_8));
+>>>>>>> db78387f34036945c4aa581dbb77596ab17fa382
 		
 		//BufferedReader br = new BufferedReader(new FileReader(file));
 		e = plainSelect.getWhere();
@@ -255,9 +276,55 @@ public class Main {
 			/* where clause evaluation */
 			
 
+<<<<<<< HEAD
 			if (!(e == null)) {
 				PrimitiveValue ret = eval.eval(e);
 				if ("TRUE".equals(ret.toString())) {
+=======
+		Eval eval = new Eval() {
+			public PrimitiveValue eval(Column c) {
+				/*
+				 * get this column's index mapping so that we can get
+				 * the value from the values array
+				 */
+				int idx = columnOrderMapping.get(c.toString());
+				/*
+				 * get this column's datatype so that we know what to
+				 * return
+				 */
+				String ptype = columnDataTypeMapping.get(c.toString());
+
+				//return getReturnType(ptype, values[idx]);
+				return getReturnType(SQLDataType.valueOf(ptype), values[idx]);
+			}
+		};
+
+		PrimitiveValue ret = null;
+		
+		try {
+			//Scanner sc = new Scanner(file);
+			while ((newRow = br.readLine()) != null) {
+
+				/* read line from csv file */
+				//newRow = sc.nextLine();
+				/* values array have individual column values from the file */
+				values = newRow.split("\\|", -1);
+
+				/* where clause evaluation */
+				
+
+				if (!(e == null)) {
+					ret = eval.eval(e);
+					if ("TRUE".equals(ret.toString())) {
+						if(numAggFunc > 0){
+							printAggToConsole();
+						}
+						else{	
+							printToConsole();
+						}
+					}
+				} else {
+>>>>>>> db78387f34036945c4aa581dbb77596ab17fa382
 					if(numAggFunc > 0){
 						printAggToConsole();
 					}
@@ -402,21 +469,43 @@ public class Main {
 		
 	}
 
-	private static PrimitiveValue computeExpression() throws SQLException {
+	static Eval eval = new Eval() {
+		public PrimitiveValue eval(Column c) {
 
-		Eval eval = new Eval() {
-			public PrimitiveValue eval(Column c) {
+			int idx = columnOrderMapping.get(c.toString());
+			String ptype = columnDataTypeMapping.get(c.toString());
 
+<<<<<<< HEAD
 				int idx = columnOrderMapping.get(c.toString());
 				ColDataType ptype = columnDataTypeMapping.get(c.toString());
 
 				return getReturnType(ptype, csvRecord.get(idx));
 			}
 		};
+=======
+			//return getReturnType(ptype, values[idx]);
+			return getReturnType(SQLDataType.valueOf(ptype), values[idx]);
+		}
+	};
+	static PrimitiveValue expResult = null; 
+	
+	private static PrimitiveValue computeExpression() throws SQLException {
 
-		PrimitiveValue result = eval.eval(aggExpr);
+//		Eval eval = new Eval() {
+//			public PrimitiveValue eval(Column c) {
+//
+//				int idx = columnOrderMapping.get(c.toString());
+//				String ptype = columnDataTypeMapping.get(c.toString());
+//
+//				//return getReturnType(ptype, values[idx]);
+//				return getReturnType(SQLDataType.valueOf(ptype), values[idx]);
+//			}
+//		};
+>>>>>>> db78387f34036945c4aa581dbb77596ab17fa382
 
-		return result;
+		expResult = eval.eval(aggExpr);
+
+		return expResult;
 	}
 
 	private static PrimitiveValue getReturnType(ColDataType ptype, String value) {
