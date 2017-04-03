@@ -1,15 +1,12 @@
 package dubstep;
 
-import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.StringReader;
-import java.nio.charset.StandardCharsets;
 import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.List;
@@ -154,12 +151,9 @@ public class Main {
 
 		System.out.print("$>");
 		BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
-		//sc = new Scanner(System.in);
 
-		//inputString = br.readLine();
 		while ((inputString = br.readLine()) != null) {
 
-			//inputString = sc.nextLine();
 			input = new StringReader(inputString);
 			parser = new CCJSqlParser(input);
 
@@ -214,6 +208,7 @@ public class Main {
 						selExp = ((SelectExpressionItem) sitem).getExpression();
 						ssitem = sitem.toString();
 
+						/*aggregate expressions are present*/
 						if (selExp instanceof Function) {
 							aggName = ((Function) selExp).getName();
 							aggFunctions = AggFunctions.valueOf(aggName);
@@ -231,7 +226,8 @@ public class Main {
 					}
 					selCols = j;
 					numAggFunc = i;
-										
+						
+					/*get results from file*/
 					readFromFile();
 					
 //					double end = System.currentTimeMillis();
@@ -267,6 +263,7 @@ public class Main {
 //		BufferedReader br = new BufferedReader(new InputStreamReader(bis, StandardCharsets.UTF_8));
 		
 		BufferedReader br = new BufferedReader(new FileReader(file));
+		/*where clause condition*/
 		e = plainSelect.getWhere();
 		reinitializeValues();
 
@@ -278,6 +275,7 @@ public class Main {
 
 				/* read line from csv file */
 				//newRow = sc.nextLine();
+				
 				/* values array have individual column values from the file */
 				values = newRow.split("\\|", -1);
 
@@ -286,9 +284,11 @@ public class Main {
 
 				if (!(e == null)) {
 					ret = eval.eval(e);
+					/*where is present in the query*/
 					if ("TRUE".equals(ret.toString())) {
+						/*aggregate expressions are present*/
 						if(numAggFunc > 0){
-							printAggToConsole();
+							computeAggregate();
 						}
 						else{	
 							printToConsole();
@@ -296,7 +296,7 @@ public class Main {
 					}
 				} else {
 					if(numAggFunc > 0){
-						printAggToConsole();
+						computeAggregate();
 					}
 					else{	
 						printToConsole();
@@ -314,11 +314,7 @@ public class Main {
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
 		}
-//		 finally{
-//		// sc.close();
-//			 if(br != null)
-//				 br.close();
-//		 }
+
 	}
 
 	/*
@@ -366,7 +362,7 @@ public class Main {
 	 * count = 5
 	 * */
 
-	private static void printAggToConsole() throws SQLException {
+	private static void computeAggregate() throws SQLException {
 
 		print = false;
 		aggPrint = true;
@@ -452,18 +448,7 @@ public class Main {
 	static PrimitiveValue expResult = null; 
 	
 	private static PrimitiveValue computeExpression() throws SQLException {
-
-//		Eval eval = new Eval() {
-//			public PrimitiveValue eval(Column c) {
-//
-//				int idx = columnOrderMapping.get(c.toString());
-//				String ptype = columnDataTypeMapping.get(c.toString());
-//
-//				//return getReturnType(ptype, values[idx]);
-//				return getReturnType(SQLDataType.valueOf(ptype), values[idx]);
-//			}
-//		};
-
+		
 		expResult = eval.eval(aggExpr);
 
 		return expResult;
