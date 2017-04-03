@@ -47,12 +47,17 @@ public class Main {
 
 	public static HashMap<String, SelectItem> selectItemsMap = new HashMap<>();
 
-	public enum AggFunctions { SUM, MIN, MAX, AVG, COUNT }; 
-	public enum SQLDataType {string, varchar, sqlchar, sqlint, decimal, date};
-	
+	public enum AggFunctions {
+		SUM, MIN, MAX, AVG, COUNT
+	};
+
+	public enum SQLDataType {
+		string, varchar, sqlchar, sqlint, decimal, date
+	};
+
 	private class TableData {
 		Map<String, Integer> columnOrderMapping;
-		Map<String, String> columnDataTypeMapping;		
+		Map<String, String> columnDataTypeMapping;
 
 		public Map<String, Integer> getColumnOrderMapping() {
 			return columnOrderMapping;
@@ -77,11 +82,11 @@ public class Main {
 	public static Map<String, TableData> tableMapping = new HashMap<String, TableData>();
 	public static Map<String, Integer> columnOrderMapping = new HashMap<String, Integer>();
 	public static Map<String, String> columnDataTypeMapping = new HashMap<String, String>();
-	
+
 	public static List<SubSelect> innerSelects = new ArrayList<>();
 
 	public static List<ColumnDefinition> columnNames = null;
-	//public static List<SelectItem> selectItemsAsObject = null;
+	// public static List<SelectItem> selectItemsAsObject = null;
 	public static SelectItem[] selectItemsAsObject = null;
 	public static int selCols = 0;
 
@@ -106,7 +111,7 @@ public class Main {
 	public static Expression aggExpr = null;
 	public static PrimitiveValue answer = null;
 	public static PrimitiveValue result = null;
-	
+
 	public static StringBuilder sbuilder = null;
 
 	public static Column aggExprs[] = null;
@@ -123,25 +128,25 @@ public class Main {
 	public static SQLDataType sqlDataType;
 	public static Boolean print = null;
 	public static Boolean outermost = false;
-	
-	public static int getAggNo(AggFunctions aggName){
-		if(aggName == AggFunctions.SUM){
+
+	public static int getAggNo(AggFunctions aggName) {
+		if (aggName == AggFunctions.SUM) {
 			return 1;
-		}else if(aggName == AggFunctions.MIN){
+		} else if (aggName == AggFunctions.MIN) {
 			return 2;
-		}else if(aggName == AggFunctions.MAX){
+		} else if (aggName == AggFunctions.MAX) {
 			return 3;
-		}else if(aggName == AggFunctions.AVG){
+		} else if (aggName == AggFunctions.AVG) {
 			return 4;
-		}else if(aggName== AggFunctions.COUNT){
+		} else if (aggName == AggFunctions.COUNT) {
 			return 5;
 		}
 		return -1;
 	}
-	
-	private static PrimitiveValue getReturnType(SQLDataType ptype , String value) {
 
-		if (ptype  == SQLDataType.sqlint) {
+	private static PrimitiveValue getReturnType(SQLDataType ptype, String value) {
+
+		if (ptype == SQLDataType.sqlint) {
 			return new LongValue(value);
 		} else if (ptype == SQLDataType.varchar || ptype == SQLDataType.sqlchar || ptype == SQLDataType.string) {
 			return new StringValue(value);
@@ -153,42 +158,41 @@ public class Main {
 
 		return null;
 	}
-	
-	public static boolean isInstanceOfSelect(SubSelect ss){
-		if(ss instanceof SubSelect){
+
+	public static boolean isInstanceOfSelect(SubSelect ss) {
+		if (ss instanceof SubSelect) {
 			return true;
-		}else{
+		} else {
 			return false;
 		}
 	}
-	
-	public static void populateInnerSelectStatements(SubSelect subQuery){
-		
-		while(isInstanceOfSelect(subQuery)){
-			//System.out.println("subquery: " + subQuery);
+
+	public static void populateInnerSelectStatements(SubSelect subQuery) {
+
+		while (isInstanceOfSelect(subQuery)) {
+			// System.out.println("subquery: " + subQuery);
 			innerSelects.add(subQuery);
 			plainSelect = (PlainSelect) subQuery.getSelectBody();
-			
-			if(! (plainSelect.getFromItem() instanceof Table)){
+
+			if (!(plainSelect.getFromItem() instanceof Table)) {
 				subQuery = (SubSelect) plainSelect.getFromItem();
-			}else{
+			} else {
 				break;
 			}
 		}
-		
+
 	}
 
-	
 	public static void main(String[] args) throws ParseException, SQLException, IOException {
 
 		System.out.print("$>");
 		BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
-		//sc = new Scanner(System.in);
+		// sc = new Scanner(System.in);
 
-		//inputString = br.readLine();
+		// inputString = br.readLine();
 		while ((inputString = br.readLine()) != null) {
 
-			//inputString = sc.nextLine();
+			// inputString = sc.nextLine();
 			input = new StringReader(inputString);
 			parser = new CCJSqlParser(input);
 
@@ -196,32 +200,28 @@ public class Main {
 				query = parser.Statement();
 
 				if (query instanceof CreateTable) {
-					
+
 					createTable();
 
 				} else if (query instanceof Select) {
-					
-					
-					
+
 					selectStar = false;
-					
-					//double start = System.currentTimeMillis();
+
+					// double start = System.currentTimeMillis();
 
 					select = (Select) query;
 					plainSelect = (PlainSelect) select.getSelectBody();
-					
+
 					populateInnerSelectStatements((SubSelect) plainSelect.getFromItem());
-					
+
 					processInnermostSelect();
-					
-					//System.out.println("list: " + innerSelects);
-					//System.out.println("query1: " + query);
-					
-					
-					
-//					double end = System.currentTimeMillis();
-//					System.out.println("time: " + (end - start)/1000);
-					
+
+					// System.out.println("list: " + innerSelects);
+					// System.out.println("query1: " + query);
+
+					// double end = System.currentTimeMillis();
+					// System.out.println("time: " + (end - start)/1000);
+
 				} else {
 					// System.out.println("Not of type select");
 				}
@@ -232,15 +232,14 @@ public class Main {
 		}
 
 	}
-	
-	private static void processInBetweenSelect(String selectQuery){
-		
 
-		//System.out.println("Inner select: " + selectQuery);
-		if(!outermost){
-		selectQuery = selectQuery.substring(1, selectQuery.length()-1);
+	private static void processInBetweenSelect(String selectQuery) {
+
+		// System.out.println("Inner select: " + selectQuery);
+		if (!outermost) {
+			selectQuery = selectQuery.substring(1, selectQuery.length() - 1);
 		}
-		
+
 		StringReader ip = new StringReader(selectQuery);
 		CCJSqlParser parser = new CCJSqlParser(ip);
 		Statement query = null;
@@ -250,93 +249,60 @@ public class Main {
 			// TODO Auto-generated catch block
 			e1.printStackTrace();
 		}
-		
-		//System.out.println("query2: " + query);
+
+		// System.out.println("query2: " + query);
 		select = (Select) query;
 		plainSelect = (PlainSelect) select.getSelectBody();
-		
+
 		Expression innerWhere = plainSelect.getWhere();
-		
-		//myTableName = plainSelect.getFromItem().toString();
-		
-		//tableData = tableMapping.get(myTableName);
-		//columnOrderMapping = tableData.getColumnOrderMapping();
-		//columnDataTypeMapping = tableData.getColumnDataTypeMapping();
 
-		selectItemsAsObject = new SelectItem[plainSelect.getSelectItems().size()];
-		aggNo = new int[plainSelect.getSelectItems().size()];
-		aggExprs = new Column[plainSelect.getSelectItems().size()];
+		// myTableName = plainSelect.getFromItem().toString();
 
-		int i = 0, j = 0;
-		for (SelectItem sitem : plainSelect.getSelectItems()) {
-			if (sitem instanceof AllColumns) {
-				selectStar =true;
-			}
-			else{
-			selExp = ((SelectExpressionItem) sitem).getExpression();
-			ssitem = sitem.toString();
+		// tableData = tableMapping.get(myTableName);
+		// columnOrderMapping = tableData.getColumnOrderMapping();
+		// columnDataTypeMapping = tableData.getColumnDataTypeMapping();
 
-			if (selExp instanceof Function) {
-				aggName = ((Function) selExp).getName();
-				aggFunctions = AggFunctions.valueOf(aggName);
-				aggNo[i] = getAggNo(aggFunctions);
-				
-				if(aggNo[i] != 5){	
-					aggExprs[i] = (Column) ((Function) selExp).getParameters().getExpressions().get(0);
-				}
-				i++;
-			}else{
-				selectItemsAsObject[j] = sitem;
-				j++;
-				selectItemsMap.put(sitem.toString(), null);
-			}
-			}
-		}
-		selCols = j;
-		numAggFunc = i;
-							
+		getSelectItemsList();
+
 		try {
 			processPassedResult(innerWhere);
 		} catch (SQLException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-	
-		
+
 	}
-	
 
 	private static void processPassedResult(Expression innerWhere) throws SQLException {
-		
-		//System.out.println("in processPassedResult with where: " + innerWhere);
-		
+
+		// System.out.println("in processPassedResult with where: " +
+		// innerWhere);
+
 		PrimitiveValue ret = null;
-		
+
 		if (!(innerWhere == null)) {
 			ret = eval.eval(innerWhere);
 			if ("TRUE".equals(ret.toString())) {
-				if(numAggFunc > 0){
+				if (numAggFunc > 0) {
 					computeAggregate();
-				}
-				else{	
+				} else {
 					printToConsole();
 				}
 			}
 		} else {
-			if(numAggFunc > 0){
+			if (numAggFunc > 0) {
 				computeAggregate();
-			}
-			else{	
+			} else {
 				printToConsole();
 			}
 		}
-		
+
 	}
 
 	private static void processInnermostSelect() {
 
 		String temp = innerSelects.get(innerSelects.size() - 1).toString();
-		temp = temp.substring(1, temp.length()-1);
+		temp = temp.substring(1, temp.length() - 1);
 		StringReader ip = new StringReader(temp);
 		CCJSqlParser parser = new CCJSqlParser(ip);
 		Statement query = null;
@@ -346,16 +312,35 @@ public class Main {
 			// TODO Auto-generated catch block
 			e1.printStackTrace();
 		}
-		
-		//System.out.println("query2: " + query);
+
+		// System.out.println("query2: " + query);
 		select = (Select) query;
 		plainSelect = (PlainSelect) select.getSelectBody();
-		
+
 		myTableName = plainSelect.getFromItem().toString();
-		
+
 		tableData = tableMapping.get(myTableName);
 		columnOrderMapping = tableData.getColumnOrderMapping();
 		columnDataTypeMapping = tableData.getColumnDataTypeMapping();
+
+		
+		getSelectItemsList();
+		
+
+		try {
+
+			readFromFile();
+
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+
+	private static void getSelectItemsList() {
 
 		selectItemsAsObject = new SelectItem[plainSelect.getSelectItems().size()];
 		aggNo = new int[plainSelect.getSelectItems().size()];
@@ -364,42 +349,29 @@ public class Main {
 		int i = 0, j = 0;
 		for (SelectItem sitem : plainSelect.getSelectItems()) {
 			if (sitem instanceof AllColumns) {
-				selectStar =true;
-			}
-			else{
-			selExp = ((SelectExpressionItem) sitem).getExpression();
-			ssitem = sitem.toString();
+				selectStar = true;
+			} else {
+				selExp = ((SelectExpressionItem) sitem).getExpression();
+				ssitem = sitem.toString();
 
-			if (selExp instanceof Function) {
-				aggName = ((Function) selExp).getName();
-				aggFunctions = AggFunctions.valueOf(aggName);
-				aggNo[i] = getAggNo(aggFunctions);
-				
-				if(aggNo[i] != 5){	
-					aggExprs[i] = (Column) ((Function) selExp).getParameters().getExpressions().get(0);
+				if (selExp instanceof Function) {
+					aggName = ((Function) selExp).getName();
+					aggFunctions = AggFunctions.valueOf(aggName);
+					aggNo[i] = getAggNo(aggFunctions);
+
+					if (aggNo[i] != 5) {
+						aggExprs[i] = (Column) ((Function) selExp).getParameters().getExpressions().get(0);
+					}
+					i++;
+				} else {
+					selectItemsAsObject[j] = sitem;
+					j++;
+					selectItemsMap.put(sitem.toString(), null);
 				}
-				i++;
-			}else{
-				selectItemsAsObject[j] = sitem;
-				j++;
-				selectItemsMap.put(sitem.toString(), null);
-			}
 			}
 		}
 		selCols = j;
 		numAggFunc = i;
-							
-		try {
-			
-			readFromFile();
-			
-		} catch (SQLException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
 	}
 
 	private static void createTable() {
@@ -415,9 +387,9 @@ public class Main {
 		for (ColumnDefinition col : columnNames) {
 			columnOrderMapping.put(col.getColumnName(), i);
 			String dtype = col.getColDataType().getDataType();
-			if(dtype.equals("int")){
+			if (dtype.equals("int")) {
 				dtype = "sqlint";
-			}else if(dtype.equals("char")){
+			} else if (dtype.equals("char")) {
 				dtype = "sqlchar";
 			}
 			columnDataTypeMapping.put(col.getColumnName(), dtype);
@@ -430,80 +402,75 @@ public class Main {
 	}
 
 	public static void reinitializeValues() {
-		
+
 		innerSelects = new ArrayList<>();
-		
+
 		avgCount = 0;
 		aggAns = 0.0;
 		aggCount = 0;
 		aggSum = 0;
 		aggMax = Integer.MIN_VALUE;
 		aggMin = Integer.MAX_VALUE;
-		
+
 	}
 
 	public static void readFromFile() throws SQLException, IOException {
-		File file = new File("data/" + myTableName + ".csv");
+		 File file = new File("data/" + myTableName + ".csv");
 		//File file = new File(myTableName + ".csv");
 
-//		FileInputStream fis = new FileInputStream(file);
-//		BufferedInputStream bis = new BufferedInputStream(fis, 65536);
-//		BufferedReader br = new BufferedReader(new InputStreamReader(bis, StandardCharsets.UTF_8));
-		
+		// FileInputStream fis = new FileInputStream(file);
+		// BufferedInputStream bis = new BufferedInputStream(fis, 65536);
+		// BufferedReader br = new BufferedReader(new InputStreamReader(bis,
+		// StandardCharsets.UTF_8));
+
 		BufferedReader br = new BufferedReader(new FileReader(file));
 		e = plainSelect.getWhere();
 		reinitializeValues();
 
 		PrimitiveValue ret = null;
-		
+
 		try {
-			//Scanner sc = new Scanner(file);
-			
-			
+			// Scanner sc = new Scanner(file);
+
 			while ((newRow = br.readLine()) != null) {
-				
-				//System.out.println("from file: " + newRow);
-				
-				//outermost = false;
+
+				// System.out.println("from file: " + newRow);
+
+				// outermost = false;
 
 				/* read line from csv file */
-				//newRow = sc.nextLine();
+				// newRow = sc.nextLine();
 				/* values array have individual column values from the file */
 				values = newRow.split("\\|", -1);
-				//values = newRow.split(",", -1);
+				// values = newRow.split(",", -1);
 				/* where clause evaluation */
-				
 
 				if (!(e == null)) {
 					ret = eval.eval(e);
 					if ("TRUE".equals(ret.toString())) {
-						if(numAggFunc > 0){
+						if (numAggFunc > 0) {
 							computeAggregate();
-						}
-						else{	
+						} else {
 							printToConsole();
 						}
 					}
 				} else {
-					if(numAggFunc > 0){
+					if (numAggFunc > 0) {
 						computeAggregate();
-					}
-					else{	
+					} else {
 						printToConsole();
 					}
 				}
 
-				
-				for(int i = innerSelects.size() -2; i >= 0; i--){
-					
+				for (int i = innerSelects.size() - 2; i >= 0; i--) {
+
 					processInBetweenSelect(innerSelects.get(i).toString());
 				}
-				
-				//System.out.println("row for main query: " + newRow);
+
+				// System.out.println("row for main query: " + newRow);
 				outermost = true;
 				processInBetweenSelect(query.toString());
-				
-				
+
 			} /*
 				 * done with file reading...if aggregate function, then print
 				 * after this and not in printToConsole
@@ -515,25 +482,21 @@ public class Main {
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
 		}
-//		 finally{
-//		// sc.close();
-//			 if(br != null)
-//				 br.close();
-//		 }
+		// finally{
+		// // sc.close();
+		// if(br != null)
+		// br.close();
+		// }
 	}
 
 	/*
-	 * sum = 1
-	 * min = 2
-	 * max = 3
-	 * avg = 4
-	 * count = 5
-	 * */
+	 * sum = 1 min = 2 max = 3 avg = 4 count = 5
+	 */
 	private static void printAggregateResult() {
 
 		StringBuilder sb = new StringBuilder();
 		for (int i = 0; i < numAggFunc; i++) {
-			
+
 			if (aggNo[i] == 1) {
 				sb.append(aggSum);
 				sb.append('|');
@@ -552,28 +515,23 @@ public class Main {
 			}
 		}
 
-		if(sb.length() > 0)
+		if (sb.length() > 0)
 			sb.setLength(sb.length() - 1);
 
 		System.out.println(sb);
 
 	}
-	
+
 	/*
-	 * sum = 1
-	 * min = 2
-	 * max = 3
-	 * avg = 4
-	 * count = 5
-	 * */
+	 * sum = 1 min = 2 max = 3 avg = 4 count = 5
+	 */
 
 	private static void computeAggregate() throws SQLException {
 
 		print = false;
 		aggPrint = true;
 
-
-		for(int i = 0; i < numAggFunc; i++){
+		for (int i = 0; i < numAggFunc; i++) {
 			if (aggNo[i] == 5) {
 				aggCount++;
 
@@ -583,76 +541,72 @@ public class Main {
 
 				if (aggNo[i] == 1) {
 					aggSum += answer.toDouble();
-				} else if (aggNo[i] == 2 ) {
+				} else if (aggNo[i] == 2) {
 					if (answer.toDouble() < aggMin) {
 						aggMin = answer.toDouble();
 					}
-				} else if (aggNo[i] == 3 ) {
+				} else if (aggNo[i] == 3) {
 					if (answer.toDouble() > aggMax) {
 						aggMax = answer.toDouble();
 					}
 
-				} else if (aggNo[i] == 4 ) {
+				} else if (aggNo[i] == 4) {
 					avgCount++;
 					avgTotal += answer.toDouble();
 				}
 			}
-		
+
 		}
-		
+
 	}
 
 	private static void printToConsole() throws SQLException {
 
-		
-		if(selectStar == true){
-			if(outermost){
+		if (selectStar == true) {
+			if (outermost) {
 				System.out.println(newRow);
 				outermost = false;
 			}
-		}
-		else
-		{
+		} else {
 			sbuilder = new StringBuilder();
-		for (int i = 0; i < selCols; i++) {
-			SelectExpressionItem sitem = (SelectExpressionItem) selectItemsAsObject[i];
+			for (int i = 0; i < selCols; i++) {
+				SelectExpressionItem sitem = (SelectExpressionItem) selectItemsAsObject[i];
 
-			if (selExp instanceof Addition || selExp instanceof Subtraction || selExp instanceof Multiplication
-					|| selExp instanceof Division) {
+				if (selExp instanceof Addition || selExp instanceof Subtraction || selExp instanceof Multiplication
+						|| selExp instanceof Division) {
 
-				Eval eval = new Eval() {
-					public PrimitiveValue eval(Column c) {
+					Eval eval = new Eval() {
+						public PrimitiveValue eval(Column c) {
 
-						int idx = columnOrderMapping.get(c.toString());
-						String ptype = columnDataTypeMapping.get(c.toString());
+							int idx = columnOrderMapping.get(c.toString());
+							String ptype = columnDataTypeMapping.get(c.toString());
 
-						//return getReturnType(ptype, values[idx]);
-						return getReturnType(SQLDataType.valueOf(ptype), values[idx]);
-					}
-				};
+							// return getReturnType(ptype, values[idx]);
+							return getReturnType(SQLDataType.valueOf(ptype), values[idx]);
+						}
+					};
 
-				result = eval.eval(selExp);
-				sbuilder.append(result);
+					result = eval.eval(selExp);
+					sbuilder.append(result);
 
-			} else {
-				int idx = columnOrderMapping.get(sitem.toString());
-				sbuilder.append(values[idx]);
+				} else {
+					int idx = columnOrderMapping.get(sitem.toString());
+					sbuilder.append(values[idx]);
+				}
+
+				if (i != selCols - 1)
+					sbuilder.append("|");
 			}
 
-			if (i != selCols - 1)
-				sbuilder.append("|");
-		}
-		
-
-		if(outermost){
-			System.out.println("outermost: -- " + sbuilder.toString());
-			outermost = false;
-		}else{
-			newRow = sbuilder.toString();
-		}
+			if (outermost) {
+				System.out.println("outermost: -- " + sbuilder.toString());
+				outermost = false;
+			} else {
+				newRow = sbuilder.toString();
+			}
 			System.out.println("new row: " + newRow);
 		}
-		
+
 	}
 
 	static Eval eval = new Eval() {
@@ -661,31 +615,28 @@ public class Main {
 			int idx = columnOrderMapping.get(c.toString());
 			String ptype = columnDataTypeMapping.get(c.toString());
 
-			//return getReturnType(ptype, values[idx]);
+			// return getReturnType(ptype, values[idx]);
 			return getReturnType(SQLDataType.valueOf(ptype), values[idx]);
 		}
 	};
-	static PrimitiveValue expResult = null; 
-	
+	static PrimitiveValue expResult = null;
+
 	private static PrimitiveValue computeExpression() throws SQLException {
 
-//		Eval eval = new Eval() {
-//			public PrimitiveValue eval(Column c) {
-//
-//				int idx = columnOrderMapping.get(c.toString());
-//				String ptype = columnDataTypeMapping.get(c.toString());
-//
-//				//return getReturnType(ptype, values[idx]);
-//				return getReturnType(SQLDataType.valueOf(ptype), values[idx]);
-//			}
-//		};
+		// Eval eval = new Eval() {
+		// public PrimitiveValue eval(Column c) {
+		//
+		// int idx = columnOrderMapping.get(c.toString());
+		// String ptype = columnDataTypeMapping.get(c.toString());
+		//
+		// //return getReturnType(ptype, values[idx]);
+		// return getReturnType(SQLDataType.valueOf(ptype), values[idx]);
+		// }
+		// };
 
 		expResult = eval.eval(aggExpr);
 
 		return expResult;
 	}
 
-	
-
 }
- 
