@@ -1,11 +1,9 @@
 package dubstep;
-<<<<<<< HEAD
-=======
-
 import java.io.BufferedInputStream;
->>>>>>> db78387f34036945c4aa581dbb77596ab17fa382
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -16,13 +14,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-<<<<<<< HEAD
-import org.apache.commons.csv.CSVFormat;
-import org.apache.commons.csv.CSVParser;
-import org.apache.commons.csv.CSVRecord;
-
-=======
->>>>>>> db78387f34036945c4aa581dbb77596ab17fa382
 import net.sf.jsqlparser.eval.Eval;
 import net.sf.jsqlparser.expression.DateValue;
 import net.sf.jsqlparser.expression.DoubleValue;
@@ -49,16 +40,17 @@ import net.sf.jsqlparser.statement.select.SelectItem;
 public class Main {
 
 	public static long avgCount = 0;
-	//public static Boolean aggPrint = false;
+	public static Boolean aggPrint = false;
 	public static double aggAns = 0.0;
 
 	public static HashMap<String, SelectItem> selectItemsMap = new HashMap<>();
 
 	public enum AggFunctions { SUM, MIN, MAX, AVG, COUNT }; 
+	public enum SQLDataType {string, varchar, sqlchar, sqlint, decimal, date};
 	
 	private class TableData {
 		Map<String, Integer> columnOrderMapping;
-		Map<String, ColDataType> columnDataTypeMapping;
+		Map<String, String> columnDataTypeMapping;		
 
 		public Map<String, Integer> getColumnOrderMapping() {
 			return columnOrderMapping;
@@ -68,12 +60,12 @@ public class Main {
 			this.columnOrderMapping = columnOrderMapping;
 		}
 
-		public Map<String, ColDataType> getColumnDataTypeMapping() {
+		public Map<String, String> getColumnDataTypeMapping() {
 			return columnDataTypeMapping;
 		}
 
-		public void setColumnDataTypeMapping(Map<String, ColDataType> columnDataTypeMapping) {
-			this.columnDataTypeMapping = columnDataTypeMapping;
+		public void setColumnDataTypeMapping(Map<String, String> columnDataTypeMapping2) {
+			this.columnDataTypeMapping = columnDataTypeMapping2;
 		}
 	}
 
@@ -82,7 +74,7 @@ public class Main {
 
 	public static Map<String, TableData> tableMapping = new HashMap<String, TableData>();
 	public static Map<String, Integer> columnOrderMapping = new HashMap<String, Integer>();
-	public static Map<String, ColDataType> columnDataTypeMapping = new HashMap<String, ColDataType>();
+	public static Map<String, String> columnDataTypeMapping = new HashMap<String, String>();
 
 	public static List<ColumnDefinition> columnNames = null;
 	//public static List<SelectItem> selectItemsAsObject = null;
@@ -94,7 +86,7 @@ public class Main {
 	public static String newRow = "";
 	public static String ssitem = "";
 	public static String aggName = "";
-	//public static String[] values = null;
+	public static String[] values = null;
 
 	public static StringReader input = null;
 
@@ -112,7 +104,7 @@ public class Main {
 	public static PrimitiveValue result = null;
 	
 	public static StringBuilder sbuilder = null;
-	
+
 	public static Column aggExprs[] = null;
 	public static int numAggFunc = 0;
 	public static double aggSum = 0;
@@ -124,9 +116,8 @@ public class Main {
 	public static int[] aggNo = null;
 
 	public static AggFunctions aggFunctions;
-	//public static Boolean print = null;
-	
-	public static CSVRecord csvRecord = null;
+	public static SQLDataType sqlDataType;
+	public static Boolean print = null;
 	
 	public static int getAggNo(AggFunctions aggName){
 		if(aggName == AggFunctions.SUM){
@@ -141,6 +132,21 @@ public class Main {
 			return 5;
 		}
 		return -1;
+	}
+	
+	private static PrimitiveValue getReturnType(SQLDataType ptype , String value) {
+
+		if (ptype  == SQLDataType.sqlint) {
+			return new LongValue(value);
+		} else if (ptype == SQLDataType.varchar || ptype == SQLDataType.sqlchar || ptype == SQLDataType.string) {
+			return new StringValue(value);
+		} else if (ptype == SQLDataType.date) {
+			return new DateValue(value);
+		} else if (ptype == SQLDataType.decimal) {
+			return new DoubleValue(value);
+		}
+
+		return null;
 	}
 
 	public static void main(String[] args) throws ParseException, SQLException, IOException {
@@ -171,7 +177,13 @@ public class Main {
 					int i = 0;
 					for (ColumnDefinition col : columnNames) {
 						columnOrderMapping.put(col.getColumnName(), i);
-						columnDataTypeMapping.put(col.getColumnName(), col.getColDataType());
+						String dtype = col.getColDataType().getDataType();
+						if(dtype.equals("int")){
+							dtype = "sqlint";
+						}else if(dtype.equals("char")){
+							dtype = "sqlchar";
+						}
+						columnDataTypeMapping.put(col.getColumnName(), dtype);
 						i++;
 					}
 					tableData.setColumnDataTypeMapping(columnDataTypeMapping);
@@ -221,14 +233,9 @@ public class Main {
 										
 					readFromFile();
 					
-<<<<<<< HEAD
-					//double end = System.currentTimeMillis();
-					//System.out.println("time: " + (end - start)/1000);
-=======
 //					double end = System.currentTimeMillis();
 //					System.out.println("time: " + (end - start)/1000);
 					
->>>>>>> db78387f34036945c4aa581dbb77596ab17fa382
 				} else {
 					// System.out.println("Not of type select");
 				}
@@ -244,60 +251,23 @@ public class Main {
 		avgCount = 0;
 		aggAns = 0.0;
 		aggCount = 0;
+		aggSum = 0;
+		aggMax = Integer.MIN_VALUE;
+		aggMin = Integer.MAX_VALUE;
+		
 	}
 
 	public static void readFromFile() throws SQLException, IOException {
-		//File file = new File("data/" + myTableName + ".csv");
+		File file = new File("data/" + myTableName + ".csv");
 		//File file = new File(myTableName + ".csv");
-<<<<<<< HEAD
-		CSVParser parser = new CSVParser(new FileReader("data/" + myTableName + ".csv"), CSVFormat.newFormat('|'));
-=======
 
-		FileInputStream fis = new FileInputStream(file);
-		BufferedInputStream bis = new BufferedInputStream(fis, 32768);
-		BufferedReader br = new BufferedReader(new InputStreamReader(bis, StandardCharsets.UTF_8));
->>>>>>> db78387f34036945c4aa581dbb77596ab17fa382
+//		FileInputStream fis = new FileInputStream(file);
+//		BufferedInputStream bis = new BufferedInputStream(fis, 65536);
+//		BufferedReader br = new BufferedReader(new InputStreamReader(bis, StandardCharsets.UTF_8));
 		
-		//BufferedReader br = new BufferedReader(new FileReader(file));
+		BufferedReader br = new BufferedReader(new FileReader(file));
 		e = plainSelect.getWhere();
 		reinitializeValues();
-		for (CSVRecord csvR : parser) {
-			csvRecord = csvR;
-		    
-		 
-		//Scanner sc = new Scanner(file);
-		//while ((newRow = br.readLine()) != null) {
-
-			/* read line from csv file */
-			//newRow = sc.nextLine();
-			/* values array have individual column values from the file */
-			//values = newRow.split("\\|", -1);
-
-			/* where clause evaluation */
-			
-
-<<<<<<< HEAD
-			if (!(e == null)) {
-				PrimitiveValue ret = eval.eval(e);
-				if ("TRUE".equals(ret.toString())) {
-=======
-		Eval eval = new Eval() {
-			public PrimitiveValue eval(Column c) {
-				/*
-				 * get this column's index mapping so that we can get
-				 * the value from the values array
-				 */
-				int idx = columnOrderMapping.get(c.toString());
-				/*
-				 * get this column's datatype so that we know what to
-				 * return
-				 */
-				String ptype = columnDataTypeMapping.get(c.toString());
-
-				//return getReturnType(ptype, values[idx]);
-				return getReturnType(SQLDataType.valueOf(ptype), values[idx]);
-			}
-		};
 
 		PrimitiveValue ret = null;
 		
@@ -324,7 +294,6 @@ public class Main {
 						}
 					}
 				} else {
->>>>>>> db78387f34036945c4aa581dbb77596ab17fa382
 					if(numAggFunc > 0){
 						printAggToConsole();
 					}
@@ -332,22 +301,23 @@ public class Main {
 						printToConsole();
 					}
 				}
-			} else {
-				if(numAggFunc > 0){
-					printAggToConsole();
-				}
-				else{	
-					printToConsole();
-				}
-			}
 
-		} /*
-			 * done with file reading...if aggregate function, then print
-			 * after this and not in printToConsole
-			 */
+			} /*
+				 * done with file reading...if aggregate function, then print
+				 * after this and not in printToConsole
+				 */
 
-		if (numAggFunc > 0)
-			printAggregateResult();
+			if (numAggFunc > 0)
+				printAggregateResult();
+
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		}
+//		 finally{
+//		// sc.close();
+//			 if(br != null)
+//				 br.close();
+//		 }
 	}
 
 	/*
@@ -397,8 +367,8 @@ public class Main {
 
 	private static void printAggToConsole() throws SQLException {
 
-		//print = false;
-		//aggPrint = true;
+		print = false;
+		aggPrint = true;
 
 
 		for(int i = 0; i < numAggFunc; i++){
@@ -430,17 +400,6 @@ public class Main {
 		
 	}
 
-	public static Eval eval = new Eval() {
-		public PrimitiveValue eval(Column c) {
-
-			int idx = columnOrderMapping.get(c.toString());
-			ColDataType ptype = columnDataTypeMapping.get(c.toString());
-
-			return getReturnType(ptype, csvRecord.get(idx));
-		}
-	};
-
-	
 	private static void printToConsole() throws SQLException {
 
 		sbuilder = new StringBuilder();
@@ -451,13 +410,23 @@ public class Main {
 			if (selExp instanceof Addition || selExp instanceof Subtraction || selExp instanceof Multiplication
 					|| selExp instanceof Division) {
 
-				
+				Eval eval = new Eval() {
+					public PrimitiveValue eval(Column c) {
+
+						int idx = columnOrderMapping.get(c.toString());
+						String ptype = columnDataTypeMapping.get(c.toString());
+
+						//return getReturnType(ptype, values[idx]);
+						return getReturnType(SQLDataType.valueOf(ptype), values[idx]);
+					}
+				};
+
 				result = eval.eval(selExp);
 				sbuilder.append(result);
 
 			} else {
 				int idx = columnOrderMapping.get(sitem.toString());
-				sbuilder.append(csvRecord.get(idx));
+				sbuilder.append(values[idx]);
 			}
 
 			if (i != selCols - 1)
@@ -475,14 +444,6 @@ public class Main {
 			int idx = columnOrderMapping.get(c.toString());
 			String ptype = columnDataTypeMapping.get(c.toString());
 
-<<<<<<< HEAD
-				int idx = columnOrderMapping.get(c.toString());
-				ColDataType ptype = columnDataTypeMapping.get(c.toString());
-
-				return getReturnType(ptype, csvRecord.get(idx));
-			}
-		};
-=======
 			//return getReturnType(ptype, values[idx]);
 			return getReturnType(SQLDataType.valueOf(ptype), values[idx]);
 		}
@@ -501,27 +462,13 @@ public class Main {
 //				return getReturnType(SQLDataType.valueOf(ptype), values[idx]);
 //			}
 //		};
->>>>>>> db78387f34036945c4aa581dbb77596ab17fa382
 
 		expResult = eval.eval(aggExpr);
 
 		return expResult;
 	}
 
-	private static PrimitiveValue getReturnType(ColDataType ptype, String value) {
-
-		if (ptype.toString().equalsIgnoreCase("int")) {
-			return new LongValue(value);
-		} else if (ptype.toString().equalsIgnoreCase("varchar") || ptype.toString().equalsIgnoreCase("char")
-				|| ptype.toString().equalsIgnoreCase("string")) {
-			return new StringValue(value);
-		} else if (ptype.toString().equalsIgnoreCase("date")) {
-			return new DateValue(value);
-		} else if (ptype.toString().equalsIgnoreCase("decimal")) {
-			return new DoubleValue(value);
-		}
-
-		return null;
-	}
+	
 
 }
+ 
