@@ -1,12 +1,15 @@
+
 package dubstep;
 import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.StringReader;
+import java.nio.charset.StandardCharsets;
 import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.List;
@@ -30,6 +33,7 @@ import net.sf.jsqlparser.schema.Column;
 import net.sf.jsqlparser.statement.Statement;
 import net.sf.jsqlparser.statement.create.table.ColumnDefinition;
 import net.sf.jsqlparser.statement.create.table.CreateTable;
+import net.sf.jsqlparser.statement.select.AllColumns;
 import net.sf.jsqlparser.statement.select.PlainSelect;
 import net.sf.jsqlparser.statement.select.Select;
 import net.sf.jsqlparser.statement.select.SelectExpressionItem;
@@ -85,7 +89,7 @@ public class Main {
 	public static String ssitem = "";
 	public static String aggName = "";
 	public static String[] values = null;
-
+	public static boolean selectStar = false;
 	public static StringReader input = null;
 
 	public static CCJSqlParser parser = null;
@@ -151,9 +155,12 @@ public class Main {
 
 		System.out.print("$>");
 		BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
+		//sc = new Scanner(System.in);
 
+		//inputString = br.readLine();
 		while ((inputString = br.readLine()) != null) {
 
+			//inputString = sc.nextLine();
 			input = new StringReader(inputString);
 			parser = new CCJSqlParser(input);
 
@@ -188,6 +195,8 @@ public class Main {
 
 				} else if (query instanceof Select) {
 					
+					selectStar =false;
+					
 					//double start = System.currentTimeMillis();
 
 					select = (Select) query;
@@ -204,11 +213,13 @@ public class Main {
 
 					int i = 0, j = 0;
 					for (SelectItem sitem : plainSelect.getSelectItems()) {
-						
+						if (sitem instanceof AllColumns) {
+							selectStar =true;
+						}
+						else{
 						selExp = ((SelectExpressionItem) sitem).getExpression();
 						ssitem = sitem.toString();
 
-						/*aggregate expressions are present*/
 						if (selExp instanceof Function) {
 							aggName = ((Function) selExp).getName();
 							aggFunctions = AggFunctions.valueOf(aggName);
@@ -223,11 +234,11 @@ public class Main {
 							j++;
 							selectItemsMap.put(sitem.toString(), null);
 						}
+						}
 					}
 					selCols = j;
 					numAggFunc = i;
-						
-					/*get results from file*/
+										
 					readFromFile();
 					
 //					double end = System.currentTimeMillis();
@@ -263,8 +274,6 @@ public class Main {
 //		BufferedReader br = new BufferedReader(new InputStreamReader(bis, StandardCharsets.UTF_8));
 		
 		BufferedReader br = new BufferedReader(new FileReader(file));
-
-		/*where clause condition*/
 		e = plainSelect.getWhere();
 		reinitializeValues();
 
@@ -276,20 +285,17 @@ public class Main {
 
 				/* read line from csv file */
 				//newRow = sc.nextLine();
-				
 				/* values array have individual column values from the file */
 				values = newRow.split("\\|", -1);
-
+				//values = newRow.split(",", -1);
 				/* where clause evaluation */
 				
 
 				if (!(e == null)) {
 					ret = eval.eval(e);
-					/*where is present in the query*/
 					if ("TRUE".equals(ret.toString())) {
-						/*aggregate expressions are present*/
 						if(numAggFunc > 0){
-							computeAggregate();
+							printAggToConsole();
 						}
 						else{	
 							printToConsole();
@@ -297,7 +303,7 @@ public class Main {
 					}
 				} else {
 					if(numAggFunc > 0){
-						computeAggregate();
+						printAggToConsole();
 					}
 					else{	
 						printToConsole();
@@ -315,7 +321,11 @@ public class Main {
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
 		}
-
+//		 finally{
+//		// sc.close();
+//			 if(br != null)
+//				 br.close();
+//		 }
 	}
 
 	/*
@@ -363,7 +373,7 @@ public class Main {
 	 * count = 5
 	 * */
 
-	private static void computeAggregate() throws SQLException {
+	private static void printAggToConsole() throws SQLException {
 
 		print = false;
 		aggPrint = true;
@@ -401,7 +411,11 @@ public class Main {
 	private static void printToConsole() throws SQLException {
 
 		sbuilder = new StringBuilder();
-
+		if(selectStar == true){
+			System.out.println(newRow);
+		}
+		else
+		{
 		for (int i = 0; i < selCols; i++) {
 			SelectExpressionItem sitem = (SelectExpressionItem) selectItemsAsObject[i];
 
@@ -430,9 +444,11 @@ public class Main {
 			if (i != selCols - 1)
 				sbuilder.append("|");
 		}
+		
 
 		
 			System.out.println(sbuilder.toString());
+		}
 		
 	}
 
@@ -449,7 +465,18 @@ public class Main {
 	static PrimitiveValue expResult = null; 
 	
 	private static PrimitiveValue computeExpression() throws SQLException {
-		
+
+//		Eval eval = new Eval() {
+//			public PrimitiveValue eval(Column c) {
+//
+//				int idx = columnOrderMapping.get(c.toString());
+//				String ptype = columnDataTypeMapping.get(c.toString());
+//
+//				//return getReturnType(ptype, values[idx]);
+//				return getReturnType(SQLDataType.valueOf(ptype), values[idx]);
+//			}
+//		};
+
 		expResult = eval.eval(aggExpr);
 
 		return expResult;
