@@ -9,8 +9,10 @@ import java.io.StringReader;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 
 import net.sf.jsqlparser.eval.Eval;
 import net.sf.jsqlparser.expression.DateValue;
@@ -55,34 +57,16 @@ public class Main {
 		string, varchar, sqlchar, sqlint, decimal, date
 	};
 
-	private class TableData {
-		Map<String, Integer> columnOrderMapping;
-		Map<String, String> columnDataTypeMapping;
-
-		public Map<String, Integer> getColumnOrderMapping() {
-			return columnOrderMapping;
-		}
-
-		public void setColumnOrderMapping(Map<String, Integer> columnOrderMapping) {
-			this.columnOrderMapping = columnOrderMapping;
-		}
-
-		public Map<String, String> getColumnDataTypeMapping() {
-			return columnDataTypeMapping;
-		}
-
-		public void setColumnDataTypeMapping(Map<String, String> columnDataTypeMapping2) {
-			this.columnDataTypeMapping = columnDataTypeMapping2;
-		}
-	}
-
-	static Main mainObj = new Main();
-	static TableData tableData;
+	public static Main mainObj = new Main();
+	public static TableData tableData = null;
 
 	public static Map<String, TableData> tableMapping = new HashMap<String, TableData>();
 	public static Map<String, Integer> columnOrderMapping = new HashMap<String, Integer>();
 	public static Map<String, String> columnDataTypeMapping = new HashMap<String, String>();
+	public static Map<String, Map> columnIndex = new HashMap<String, Map>();
 
+	public static List orderByElementsList = null;
+	public static boolean orderOperator = false;
 	public static List<SubSelect> innerSelects = new ArrayList<>();
 
 	public static List<ColumnDefinition> columnNames = null;
@@ -129,6 +113,12 @@ public class Main {
 	public static Boolean print = null;
 	public static Boolean outermost = false;
 
+	public static ProcessQueries pq = null;
+	public static MyCreateTable ct = null;
+	
+	public static long limit = 0;
+	public static long count = 0;
+
 	public static int getAggNo(AggFunctions aggName) {
 		if (aggName == AggFunctions.SUM) {
 			return 1;
@@ -159,68 +149,63 @@ public class Main {
 		return null;
 	}
 
-	public static boolean isInstanceOfSelect(SubSelect ss) {
-		if (ss instanceof SubSelect) {
-			return true;
-		} else {
-			return false;
-		}
-	}
-
-	public static void populateInnerSelectStatements(SubSelect subQuery) {
-
-		while (isInstanceOfSelect(subQuery)) {
-			// System.out.println("subquery: " + subQuery);
-			innerSelects.add(subQuery);
-			plainSelect = (PlainSelect) subQuery.getSelectBody();
-
-			if (!(plainSelect.getFromItem() instanceof Table)) {
-				subQuery = (SubSelect) plainSelect.getFromItem();
-			} else {
-				break;
-			}
-		}
-
-	}
-
 	public static void main(String[] args) throws ParseException, SQLException, IOException {
 
 		System.out.print("$>");
 		BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
-		// sc = new Scanner(System.in);
 
-		// inputString = br.readLine();
+		/*
+		 * keep reading from the grader
+		 * */
 		while ((inputString = br.readLine()) != null) {
 
-			// inputString = sc.nextLine();
 			input = new StringReader(inputString);
 			parser = new CCJSqlParser(input);
 
 			try {
 				query = parser.Statement();
 
+				//create table query
 				if (query instanceof CreateTable) {
 
-					createTable();
+					ct = new MyCreateTable();
+					ct.createTable();
 
-				} else if (query instanceof Select) {
+				} else if (query instanceof Select) {		//select queries 
+					
+					innerSelects = new ArrayList<>();		//stores nested select statements
+					pq = new ProcessQueries();
 
 					selectStar = false;
-
-					// double start = System.currentTimeMillis();
 
 					select = (Select) query;
 					plainSelect = (PlainSelect) select.getSelectBody();
 
-					populateInnerSelectStatements((SubSelect) plainSelect.getFromItem());
+					orderByElementsList = plainSelect.getOrderByElements();
+					limit = -1;
+					count = 0;
 
-					processInnermostSelect();
+					if (orderByElementsList != null){
+						orderOperator = true;				/*tells us from where to read the data::file or map*/
+					}
 
-					// System.out.println("list: " + innerSelects);
-					// System.out.println("query1: " + query);
-
-					// double end = System.currentTimeMillis();
-					// System.out.println("time: " + (end - start)/1000);
+					if (plainSelect.getLimit() != null) {
+						limit = plainSelect.getLimit().getRowCount();
+					}
+					//System.out.println("limit: " + limit);
+					
+					/*
+					 * check if there are inner select statements
+					 * */
+					FromItem fromItem = plainSelect.getFromItem();
+					if (fromItem instanceof Table) {
+						// no inner select
+						outermost = true;
+						pq.processInnermostSelect();
+					} else {
+						pq.populateInnerSelectStatements((SubSelect) plainSelect.getFromItem());
+						pq.processInnermostSelect();
+					}
 
 				} else {
 					// System.out.println("Not of type select");
@@ -233,61 +218,89 @@ public class Main {
 
 	}
 
-	private static void processInBetweenSelect(String selectQuery) {
-
-		// System.out.println("Inner select: " + selectQuery);
-		if (!outermost) {
-			selectQuery = selectQuery.substring(1, selectQuery.length() - 1);
-		}
-
-		StringReader ip = new StringReader(selectQuery);
-		CCJSqlParser parser = new CCJSqlParser(ip);
-		Statement query = null;
-		try {
-			query = parser.Statement();
-		} catch (ParseException e1) {
-			// TODO Auto-generated catch block
-			e1.printStackTrace();
-		}
-
-		// System.out.println("query2: " + query);
-		select = (Select) query;
-		plainSelect = (PlainSelect) select.getSelectBody();
-
-		Expression innerWhere = plainSelect.getWhere();
-
-		// myTableName = plainSelect.getFromItem().toString();
-
-		// tableData = tableMapping.get(myTableName);
-		// columnOrderMapping = tableData.getColumnOrderMapping();
-		// columnDataTypeMapping = tableData.getColumnDataTypeMapping();
-
-		getSelectItemsList();
-
-		try {
-			processPassedResult(innerWhere);
-		} catch (SQLException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-
+	public static void reinitializeValues() {
+		avgCount = 0;
+		aggAns = 0.0;
+		aggCount = 0;
+		aggSum = 0;
+		aggMax = Integer.MIN_VALUE;
+		aggMin = Integer.MAX_VALUE;
 	}
 
-	private static void processPassedResult(Expression innerWhere) throws SQLException {
+	public static void readFromFile() throws SQLException, IOException {
 
-		// System.out.println("in processPassedResult with where: " +
-		// innerWhere);
+		/*
+		 * read from the file directly, as no order by clause is present
+		 * */
+		if (orderOperator == false) {
+			File file = new File("data/" + myTableName + ".csv");
+			File file = new File(myTableName + ".csv");
 
-		PrimitiveValue ret = null;
+			BufferedReader br = new BufferedReader(new FileReader(file));
+			//get the where clause
+			e = plainSelect.getWhere();
+			
+			reinitializeValues();
 
-		if (!(innerWhere == null)) {
-			ret = eval.eval(innerWhere);
+			PrimitiveValue ret = null;
+
+			try {
+
+				while ((newRow = br.readLine()) != null) {
+					processReadFromFile(ret);
+				}
+
+				/*
+				 * done with file reading...if aggregate function, then print
+				 * after this and not in printToConsole
+				 */
+
+				if (numAggFunc > 0)
+					printAggregateResult();
+
+			} catch (FileNotFoundException e) {
+				e.printStackTrace();
+			}
+			
+		} else {							//order by present, read from the maps created
+			e = plainSelect.getWhere();
+			reinitializeValues();
+			PrimitiveValue ret = null;
+
+			Map orderIndexMap = columnIndex.get(orderByElementsList.get(0).toString());
+
+			Iterator iterator = orderIndexMap.entrySet().iterator();
+			while (iterator.hasNext()) {
+				Map.Entry entry = (Entry) iterator.next();
+				for (String rowString : (ArrayList<String>) entry.getValue()) {
+					newRow = rowString;
+					processReadFromFile(ret);
+				}
+			}
+			if (numAggFunc > 0)
+				printAggregateResult();
+		}
+	}
+
+	public static void processReadFromFile(PrimitiveValue ret) throws SQLException {
+
+		outermost = false;
+
+		/* read line from csv file */
+		/* values array have individual column values from the file */
+		values = newRow.split("\\|", -1);
+
+		/* where clause evaluation */
+		if (!(e == null)) {
+			ret = eval.eval(e);
 			if ("TRUE".equals(ret.toString())) {
 				if (numAggFunc > 0) {
 					computeAggregate();
 				} else {
 					printToConsole();
 				}
+			} else {
+				newRow = "";				//making this "" as it shouldn't be passed on to outer selects
 			}
 		} else {
 			if (numAggFunc > 0) {
@@ -297,202 +310,34 @@ public class Main {
 			}
 		}
 
-	}
-
-	private static void processInnermostSelect() {
-
-		String temp = innerSelects.get(innerSelects.size() - 1).toString();
-		temp = temp.substring(1, temp.length() - 1);
-		StringReader ip = new StringReader(temp);
-		CCJSqlParser parser = new CCJSqlParser(ip);
-		Statement query = null;
-		try {
-			query = parser.Statement();
-		} catch (ParseException e1) {
-			// TODO Auto-generated catch block
-			e1.printStackTrace();
-		}
-
-		// System.out.println("query2: " + query);
-		select = (Select) query;
-		plainSelect = (PlainSelect) select.getSelectBody();
-
-		myTableName = plainSelect.getFromItem().toString();
-
-		tableData = tableMapping.get(myTableName);
-		columnOrderMapping = tableData.getColumnOrderMapping();
-		columnDataTypeMapping = tableData.getColumnDataTypeMapping();
-
-		
-		getSelectItemsList();
-		
-
-		try {
-
-			readFromFile();
-
-		} catch (SQLException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-	}
-
-	private static void getSelectItemsList() {
-
-		selectItemsAsObject = new SelectItem[plainSelect.getSelectItems().size()];
-		aggNo = new int[plainSelect.getSelectItems().size()];
-		aggExprs = new Column[plainSelect.getSelectItems().size()];
-
-		int i = 0, j = 0;
-		for (SelectItem sitem : plainSelect.getSelectItems()) {
-			if (sitem instanceof AllColumns) {
-				selectStar = true;
-			} else {
-				selExp = ((SelectExpressionItem) sitem).getExpression();
-				ssitem = sitem.toString();
-
-				if (selExp instanceof Function) {
-					aggName = ((Function) selExp).getName();
-					aggFunctions = AggFunctions.valueOf(aggName);
-					aggNo[i] = getAggNo(aggFunctions);
-
-					if (aggNo[i] != 5) {
-						aggExprs[i] = (Column) ((Function) selExp).getParameters().getExpressions().get(0);
-					}
-					i++;
-				} else {
-					selectItemsAsObject[j] = sitem;
-					j++;
-					selectItemsMap.put(sitem.toString(), null);
-				}
+		/*
+		 * row is returned from the file, so pass it on to outer select statements
+		 * */
+		if (!newRow.equals("")) {
+			
+			/*
+			 * innerSelects has a list of all the inner/nested select statements
+			 * NOT the outermost/main select statement
+			 * */
+			for (int i = innerSelects.size() - 2; i >= 0 && !newRow.equals(""); i--) {
+				pq.processInBetweenSelect(innerSelects.get(i).toString());
 			}
-		}
-		selCols = j;
-		numAggFunc = i;
-	}
 
-	private static void createTable() {
-
-		table = (CreateTable) query;
-
-		myTableName = table.getTable().getName();
-		tableData = mainObj.new TableData();
-
-		columnNames = table.getColumnDefinitions();
-
-		int i = 0;
-		for (ColumnDefinition col : columnNames) {
-			columnOrderMapping.put(col.getColumnName(), i);
-			String dtype = col.getColDataType().getDataType();
-			if (dtype.equals("int")) {
-				dtype = "sqlint";
-			} else if (dtype.equals("char")) {
-				dtype = "sqlchar";
-			}
-			columnDataTypeMapping.put(col.getColumnName(), dtype);
-			i++;
-		}
-		tableData.setColumnDataTypeMapping(columnDataTypeMapping);
-		tableData.setColumnOrderMapping(columnOrderMapping);
-
-		tableMapping.put(myTableName, tableData);
-	}
-
-	public static void reinitializeValues() {
-
-		innerSelects = new ArrayList<>();
-
-		avgCount = 0;
-		aggAns = 0.0;
-		aggCount = 0;
-		aggSum = 0;
-		aggMax = Integer.MIN_VALUE;
-		aggMin = Integer.MAX_VALUE;
-
-	}
-
-	public static void readFromFile() throws SQLException, IOException {
-		 File file = new File("data/" + myTableName + ".csv");
-		//File file = new File(myTableName + ".csv");
-
-		// FileInputStream fis = new FileInputStream(file);
-		// BufferedInputStream bis = new BufferedInputStream(fis, 65536);
-		// BufferedReader br = new BufferedReader(new InputStreamReader(bis,
-		// StandardCharsets.UTF_8));
-
-		BufferedReader br = new BufferedReader(new FileReader(file));
-		e = plainSelect.getWhere();
-		reinitializeValues();
-
-		PrimitiveValue ret = null;
-
-		try {
-			// Scanner sc = new Scanner(file);
-
-			while ((newRow = br.readLine()) != null) {
-
-				// System.out.println("from file: " + newRow);
-
-				// outermost = false;
-
-				/* read line from csv file */
-				// newRow = sc.nextLine();
-				/* values array have individual column values from the file */
-				values = newRow.split("\\|", -1);
-				// values = newRow.split(",", -1);
-				/* where clause evaluation */
-
-				if (!(e == null)) {
-					ret = eval.eval(e);
-					if ("TRUE".equals(ret.toString())) {
-						if (numAggFunc > 0) {
-							computeAggregate();
-						} else {
-							printToConsole();
-						}
-					}
-				} else {
-					if (numAggFunc > 0) {
-						computeAggregate();
-					} else {
-						printToConsole();
-					}
-				}
-
-				for (int i = innerSelects.size() - 2; i >= 0; i--) {
-
-					processInBetweenSelect(innerSelects.get(i).toString());
-				}
-
-				// System.out.println("row for main query: " + newRow);
+			/*
+			 * row is returned till the end
+			 * */
+			if (!newRow.equals("")) {
 				outermost = true;
-				processInBetweenSelect(query.toString());
-
-			} /*
-				 * done with file reading...if aggregate function, then print
-				 * after this and not in printToConsole
-				 */
-
-			if (numAggFunc > 0)
-				printAggregateResult();
-
-		} catch (FileNotFoundException e) {
-			e.printStackTrace();
+				pq.processInBetweenSelect(query.toString());
+			}
 		}
-		// finally{
-		// // sc.close();
-		// if(br != null)
-		// br.close();
-		// }
+
 	}
 
 	/*
 	 * sum = 1 min = 2 max = 3 avg = 4 count = 5
 	 */
-	private static void printAggregateResult() {
+	public static void printAggregateResult() {
 
 		StringBuilder sb = new StringBuilder();
 		for (int i = 0; i < numAggFunc; i++) {
@@ -526,7 +371,7 @@ public class Main {
 	 * sum = 1 min = 2 max = 3 avg = 4 count = 5
 	 */
 
-	private static void computeAggregate() throws SQLException {
+	public static void computeAggregate() throws SQLException {
 
 		print = false;
 		aggPrint = true;
@@ -560,12 +405,16 @@ public class Main {
 
 	}
 
-	private static void printToConsole() throws SQLException {
+	public static void printToConsole() throws SQLException {
 
 		if (selectStar == true) {
-			if (outermost) {
-				System.out.println(newRow);
+			if (outermost && ((limit >= 1 && count<limit) || limit == -1)){
+				if (!newRow.equals("")) {
+					System.out.println(newRow);
+					count++;
+				}
 				outermost = false;
+
 			}
 		} else {
 			sbuilder = new StringBuilder();
@@ -580,8 +429,6 @@ public class Main {
 
 							int idx = columnOrderMapping.get(c.toString());
 							String ptype = columnDataTypeMapping.get(c.toString());
-
-							// return getReturnType(ptype, values[idx]);
 							return getReturnType(SQLDataType.valueOf(ptype), values[idx]);
 						}
 					};
@@ -598,18 +445,22 @@ public class Main {
 					sbuilder.append("|");
 			}
 
-			if (outermost) {
-				System.out.println("outermost: -- " + sbuilder.toString());
+			if (outermost && ((limit >= 1 && count<limit) || limit == -1)){
+				if (!newRow.equals("")) {
+					System.out.println(sbuilder.toString());
+					count++;
+				}
 				outermost = false;
+
 			} else {
 				newRow = sbuilder.toString();
 			}
-			System.out.println("new row: " + newRow);
+			// System.out.println("new row: " + newRow);
 		}
 
 	}
 
-	static Eval eval = new Eval() {
+	public static Eval eval = new Eval() {
 		public PrimitiveValue eval(Column c) {
 
 			int idx = columnOrderMapping.get(c.toString());
@@ -622,20 +473,7 @@ public class Main {
 	static PrimitiveValue expResult = null;
 
 	private static PrimitiveValue computeExpression() throws SQLException {
-
-		// Eval eval = new Eval() {
-		// public PrimitiveValue eval(Column c) {
-		//
-		// int idx = columnOrderMapping.get(c.toString());
-		// String ptype = columnDataTypeMapping.get(c.toString());
-		//
-		// //return getReturnType(ptype, values[idx]);
-		// return getReturnType(SQLDataType.valueOf(ptype), values[idx]);
-		// }
-		// };
-
 		expResult = eval.eval(aggExpr);
-
 		return expResult;
 	}
 
