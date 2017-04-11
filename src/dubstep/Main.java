@@ -234,7 +234,7 @@ public class Main {
 		 * */
 		if (orderOperator == false) {
 			File file = new File("data/" + myTableName + ".csv");
-			File file = new File(myTableName + ".csv");
+			//File file = new File(myTableName + ".csv");
 
 			BufferedReader br = new BufferedReader(new FileReader(file));
 			//get the where clause
