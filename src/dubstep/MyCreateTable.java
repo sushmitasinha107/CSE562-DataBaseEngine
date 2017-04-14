@@ -1,4 +1,5 @@
 package dubstep;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -82,7 +83,7 @@ public class MyCreateTable {
 
 		Main.tableMapping.put(Main.myTableName, Main.tableData);
 		
-		if (primaryKeyList != null) {
+		if (primaryKeyList.size() != 0) {
 			makePrimaryMapping(primaryKeyList);
 			for (String indexColumn : indexKeyList) {
 				sortMyTable(indexColumn, primaryKeyList);
@@ -136,8 +137,7 @@ public class MyCreateTable {
 		Map map = new TreeMap<>();
 		String newRow = "";
 		String keyBuilder = "";
-		//File file = new File(Main.myTableName + ".csv");
-		File file = new File("data/" + Main.myTableName + ".csv");
+		File file = new File(Main.myTableName + ".csv");
 		BufferedReader br = new BufferedReader(new FileReader(file));
 		String values[] = null;
 		List<String> list = null;
