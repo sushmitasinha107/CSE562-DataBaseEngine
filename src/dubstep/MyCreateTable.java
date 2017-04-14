@@ -1,4 +1,5 @@
-package dubstep;
+
+//package dubstep;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -19,52 +20,52 @@ import net.sf.jsqlparser.statement.create.table.CreateTable;
 import net.sf.jsqlparser.statement.create.table.Index;
 
 public class MyCreateTable {
-	
+
 	public static Index primaryKey;
 	public static Index indexKey;
 	public static List<String> primaryKeyList;
-	public static List<String> indexKeyList; 
+	public static List<String> indexKeyList;
 
 	public static void createTable() throws IOException {
 		Main.table = (CreateTable) Main.query;
 		List<Index> tableIndex = Main.table.getIndexes();
-		
+
 		Main.myTableName = Main.table.getTable().getName();
 		primaryKeyList = new ArrayList<>();
 		indexKeyList = new ArrayList<>();
-		
-		//System.out.println(tableIndex);
+
+		// System.out.println(tableIndex);
 		if (tableIndex != null) {
 			primaryKey = tableIndex.get(0);
 			indexKey = tableIndex.get(1);
 
-			for (String s : primaryKey.getColumnsNames()){
+			for (String s : primaryKey.getColumnsNames()) {
 				String k = Main.myTableName + "." + s;
 				primaryKeyList.add(k);
 				indexKeyList.add(k);
 			}
-			
-			for (String s : indexKey.getColumnsNames()){
+
+			for (String s : indexKey.getColumnsNames()) {
 				String k = Main.myTableName + "." + s;
 				indexKeyList.add(k);
 			}
-			
-			//System.out.println("pk::" + primaryKeyList);
-			
-			//primaryKeyList = primaryKey.getColumnsNames();
 
-			//indexKeyList = indexKey.getColumnsNames();
-			//System.out.println(indexKeyList);
+			// System.out.println("pk::" + primaryKeyList);
+
+			// primaryKeyList = primaryKey.getColumnsNames();
+
+			// indexKeyList = indexKey.getColumnsNames();
+			// System.out.println(indexKeyList);
 		}
-		
+
 		Main.tableData = new TableData();
 		Main.columnNames = Main.table.getColumnDefinitions();
-		
-		//System.out.println("cols:" + Main.columnNames);
+
+		// System.out.println("cols:" + Main.columnNames);
 
 		int i = 0;
 		for (ColumnDefinition col : Main.columnNames) {
-			Main.columnOrderMapping.put(Main.myTableName + "." +col.getColumnName(), i);
+			Main.columnOrderMapping.put(Main.myTableName + "." + col.getColumnName(), i);
 
 			String dtype = col.getColDataType().getDataType();
 			if (dtype.equalsIgnoreCase("INT")) {
@@ -73,16 +74,16 @@ public class MyCreateTable {
 				dtype = "sqlchar";
 			}
 
-			Main.columnDataTypeMapping.put(Main.myTableName+ "." + col.getColumnName(), dtype);
+			Main.columnDataTypeMapping.put(Main.myTableName + "." + col.getColumnName(), dtype);
 			i++;
 		}
-		
-		//System.out.println("cols:" + Main.columnOrderMapping);
+
+		// System.out.println("cols:" + Main.columnOrderMapping);
 		Main.tableData.setColumnDataTypeMapping(Main.columnDataTypeMapping);
 		Main.tableData.setColumnOrderMapping(Main.columnOrderMapping);
 
 		Main.tableMapping.put(Main.myTableName, Main.tableData);
-		
+
 		if (primaryKeyList.size() != 0) {
 			makePrimaryMapping(primaryKeyList);
 			for (String indexColumn : indexKeyList) {
@@ -93,9 +94,16 @@ public class MyCreateTable {
 	}
 
 	private static void makePrimaryMapping(List<String> primaryKeyList) throws FileNotFoundException {
-		// TODO Auto-generated method stub
-		//File file = new File(Main.myTableName + ".csv");
-		File file = new File("data/" + Main.myTableName + ".csv");
+
+		File file;
+		if (System.getProperty("user.home").contains("deepti")) {
+			System.out.println("local");
+			file = new File(Main.myTableName + ".csv");
+		} else {
+
+			file = new File("data/" + Main.myTableName + ".csv");
+		}
+
 		BufferedReader br = new BufferedReader(new FileReader(file));
 		String values[] = null;
 		String newRow = "";
@@ -137,8 +145,16 @@ public class MyCreateTable {
 		Map map = new TreeMap<>();
 		String newRow = "";
 		String keyBuilder = "";
-		//File file = new File(Main.myTableName + ".csv");
-		File file = new File("data/" + Main.myTableName + ".csv");
+
+		File file;
+		if (System.getProperty("user.home").contains("deepti")) {
+			System.out.println("local");
+			file = new File(Main.myTableName + ".csv");
+		} else {
+
+			file = new File("data/" + Main.myTableName + ".csv");
+		}
+
 		BufferedReader br = new BufferedReader(new FileReader(file));
 		String values[] = null;
 		List<String> list = null;
