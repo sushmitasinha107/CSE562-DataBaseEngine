@@ -1,5 +1,4 @@
-
-//package dubstep;
+package dubstep;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -238,8 +237,8 @@ public class Main {
 		 * read from the file directly, as no order by clause is present
 		 * */
 		if (orderOperator == false) {
-			// File file = new File("data/" + myTableName + ".csv");
-			File file = new File(myTableName + ".csv");
+			 File file = new File("data/" + myTableName + ".csv");
+			//File file = new File(myTableName + ".csv");
 
 			BufferedReader br = new BufferedReader(new FileReader(file));
 			//get the where clause

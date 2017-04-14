@@ -1,3 +1,4 @@
+package dubstep;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -92,7 +93,8 @@ public class MyCreateTable {
 
 	private static void makePrimaryMapping(List<String> primaryKeyList) throws FileNotFoundException {
 		// TODO Auto-generated method stub
-		File file = new File(Main.myTableName + ".csv");
+		//File file = new File(Main.myTableName + ".csv");
+		File file = new File("data/" + Main.myTableName + ".csv");
 		BufferedReader br = new BufferedReader(new FileReader(file));
 		String values[] = null;
 		String newRow = "";
@@ -134,7 +136,8 @@ public class MyCreateTable {
 		Map map = new TreeMap<>();
 		String newRow = "";
 		String keyBuilder = "";
-		File file = new File(Main.myTableName + ".csv");
+		//File file = new File(Main.myTableName + ".csv");
+		File file = new File("data/" + Main.myTableName + ".csv");
 		BufferedReader br = new BufferedReader(new FileReader(file));
 		String values[] = null;
 		List<String> list = null;
