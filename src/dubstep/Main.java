@@ -1,4 +1,5 @@
-package dubstep;
+
+//package dubstep;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -54,7 +55,7 @@ public class Main {
 	};
 
 	public enum SQLDataType {
-		string, varchar, sqlchar, sqlint, decimal, date
+		string, varchar, sqlchar, sqlint, DECIMAL, DATE, decimal, date
 	};
 
 	public static Main mainObj = new Main();
@@ -99,6 +100,7 @@ public class Main {
 	public static StringBuilder sbuilder = null;
 
 	public static Column aggExprs[] = null;
+	//public static Function aggExprs[] = null;
 	public static int numAggFunc = 0;
 	public static double aggSum = 0;
 	public static long aggCount = 0;
@@ -118,6 +120,8 @@ public class Main {
 	
 	public static long limit = 0;
 	public static long count = 0;
+	
+	public static Map<String, String> primaryKeyIndex = new HashMap<String, String>();
 
 	public static int getAggNo(AggFunctions aggName) {
 		if (aggName == AggFunctions.SUM) {
@@ -140,9 +144,9 @@ public class Main {
 			return new LongValue(value);
 		} else if (ptype == SQLDataType.varchar || ptype == SQLDataType.sqlchar || ptype == SQLDataType.string) {
 			return new StringValue(value);
-		} else if (ptype == SQLDataType.date) {
+		} else if (ptype == SQLDataType.DATE) {
 			return new DateValue(value);
-		} else if (ptype == SQLDataType.decimal) {
+		} else if (ptype == SQLDataType.DECIMAL) {
 			return new DoubleValue(value);
 		}
 
@@ -173,6 +177,7 @@ public class Main {
 
 				} else if (query instanceof Select) {		//select queries 
 					
+					reinitializeValues();
 					innerSelects = new ArrayList<>();		//stores nested select statements
 					pq = new ProcessQueries();
 
@@ -233,14 +238,14 @@ public class Main {
 		 * read from the file directly, as no order by clause is present
 		 * */
 		if (orderOperator == false) {
-			File file = new File("data/" + myTableName + ".csv");
-			//File file = new File(myTableName + ".csv");
+			// File file = new File("data/" + myTableName + ".csv");
+			File file = new File(myTableName + ".csv");
 
 			BufferedReader br = new BufferedReader(new FileReader(file));
 			//get the where clause
 			e = plainSelect.getWhere();
 			
-			reinitializeValues();
+			//reinitializeValues();
 
 			PrimitiveValue ret = null;
 
@@ -262,18 +267,21 @@ public class Main {
 				e.printStackTrace();
 			}
 			
-		} else {							//order by present, read from the maps created
+		} else { 								// order by present, read from the maps created
 			e = plainSelect.getWhere();
 			reinitializeValues();
 			PrimitiveValue ret = null;
 
+			//System.out.println(orderByElementsList);
 			Map orderIndexMap = columnIndex.get(orderByElementsList.get(0).toString());
+			
+			//System.out.println("OIM:: " + orderIndexMap);
 
 			Iterator iterator = orderIndexMap.entrySet().iterator();
 			while (iterator.hasNext()) {
 				Map.Entry entry = (Entry) iterator.next();
 				for (String rowString : (ArrayList<String>) entry.getValue()) {
-					newRow = rowString;
+					newRow = primaryKeyIndex.get(rowString);
 					processReadFromFile(ret);
 				}
 			}
@@ -284,7 +292,9 @@ public class Main {
 
 	public static void processReadFromFile(PrimitiveValue ret) throws SQLException {
 
-		outermost = false;
+		if(innerSelects.size() != 0){
+			outermost = false;
+		}
 
 		/* read line from csv file */
 		/* values array have individual column values from the file */
@@ -313,22 +323,29 @@ public class Main {
 		/*
 		 * row is returned from the file, so pass it on to outer select statements
 		 * */
-		if (!newRow.equals("")) {
-			
-			/*
-			 * innerSelects has a list of all the inner/nested select statements
-			 * NOT the outermost/main select statement
-			 * */
-			for (int i = innerSelects.size() - 2; i >= 0 && !newRow.equals(""); i--) {
-				pq.processInBetweenSelect(innerSelects.get(i).toString());
-			}
-
-			/*
-			 * row is returned till the end
-			 * */
+		if (!outermost) {
 			if (!newRow.equals("")) {
-				outermost = true;
-				pq.processInBetweenSelect(query.toString());
+
+				/*
+				 * innerSelects has a list of all the inner/nested select
+				 * statements NOT the outermost/main select statement
+				 */
+				for (int i = innerSelects.size() - 2; i >= 0 && !newRow.equals(""); i--) {
+
+					reinitializeValues();
+					pq.processInBetweenSelect(innerSelects.get(i).toString());
+				}
+
+				/*
+				 * row is returned till the end
+				 */
+				if (!newRow.equals("")) {
+					outermost = true;
+
+					// reinitializeValues();
+
+					pq.processInBetweenSelect(query.toString());
+				}
 			}
 		}
 
@@ -450,7 +467,9 @@ public class Main {
 					System.out.println(sbuilder.toString());
 					count++;
 				}
-				outermost = false;
+				if(innerSelects.size() != 0){
+					outermost = false;
+				}
 
 			} else {
 				newRow = sbuilder.toString();
