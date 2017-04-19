@@ -1,4 +1,4 @@
-package dubstep;
+//package dubstep;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -179,7 +179,7 @@ public class MyCreateTable {
 						map.put(key, list);
 					}
 
-				} else if (ptype1 == Main.SQLDataType.DECIMAL) {
+				} else if (ptype1 == Main.SQLDataType.DECIMAL || ptype1 == Main.SQLDataType.decimal) {
 					Double key = Double.parseDouble(values[idx]);
 					if (map.containsKey(key)) {
 						list = (List<String>) map.get(key);

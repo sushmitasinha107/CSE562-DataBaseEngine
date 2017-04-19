@@ -1,4 +1,4 @@
-package dubstep;
+//package dubstep;
 import java.io.IOException;
 import java.io.StringReader;
 import java.sql.SQLException;
@@ -8,7 +8,6 @@ import net.sf.jsqlparser.expression.Function;
 import net.sf.jsqlparser.expression.PrimitiveValue;
 import net.sf.jsqlparser.parser.CCJSqlParser;
 import net.sf.jsqlparser.parser.ParseException;
-import net.sf.jsqlparser.schema.Column;
 import net.sf.jsqlparser.schema.Table;
 import net.sf.jsqlparser.statement.Statement;
 import net.sf.jsqlparser.statement.select.AllColumns;
@@ -145,7 +144,7 @@ public class ProcessQueries {
 
 		Main.selectItemsAsObject = new SelectItem[Main.plainSelect.getSelectItems().size()];
 		Main.aggNo = new int[Main.plainSelect.getSelectItems().size()];
-		Main.aggExprs = new Column[Main.plainSelect.getSelectItems().size()];
+		Main.aggExprs = new Expression[Main.plainSelect.getSelectItems().size()];
 
 		int i = 0, j = 0;
 		for (SelectItem sitem : Main.plainSelect.getSelectItems()) {
@@ -161,7 +160,9 @@ public class ProcessQueries {
 					Main.aggNo[i] = Main.getAggNo(Main.aggFunctions);
 
 					if (Main.aggNo[i] != 5) {
-						Main.aggExprs[i] = (Column) ((Function) Main.selExp).getParameters().getExpressions().get(0);
+						//System.out.println("--" + Main.selExp);
+						Main.aggExprs[i] = (Expression)((Function) Main.selExp).getParameters().getExpressions().get(0);
+						//System.out.println(Main.aggExprs[i]);
 					}
 					i++;
 				} else {

@@ -1,4 +1,4 @@
-package dubstep;
+//package dubstep;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -98,8 +98,8 @@ public class Main {
 
 	public static StringBuilder sbuilder = null;
 
-	public static Column aggExprs[] = null;
-	// public static Function aggExprs[] = null;
+	//public static Column aggExprs[] = null;
+	 public static Expression aggExprs[] = null;
 	public static int numAggFunc = 0;
 	public static double aggSum = 0;
 	public static long aggCount = 0;
@@ -153,6 +153,8 @@ public class Main {
 	}
 
 	public static void main(String[] args) throws ParseException, SQLException, IOException {
+		
+		
 
 		System.out.print("$>");
 		BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
