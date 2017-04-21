@@ -1,3 +1,4 @@
+
 package dubstep;
 
 import java.io.BufferedReader;
@@ -97,12 +98,7 @@ public class MyCreateTable {
 			while ((newRow = br.readLine()) != null) {
 
 				values = newRow.split("\\|", -1);
-				// for(String col : primaryKeyList){
-				// idx = Main.columnOrderMapping.get(col);
-				// //keyBuilder.append(values[idx]);
-				// keyBuilder = keyBuilder.concat(values[idx]) ;
-				//
-				// }
+				
 
 				if (primaryKeyList.size() != 0) {
 					if (primaryKeyList.size() == 1) {
@@ -119,7 +115,6 @@ public class MyCreateTable {
 
 			}
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 
@@ -145,9 +140,11 @@ public class MyCreateTable {
 		int idx = -1;
 		int idpk = -1;
 		try {
+
 			while ((newRow = br.readLine()) != null) {
 				// System.out.println(newRow);
 				values = newRow.split("\\|", -1);
+				//System.out.println("colName::" + columnName);
 				idx = Main.columnOrderMapping.get(columnName);
 				String ptype = Main.columnDataTypeMapping.get(columnName);
 				Main.SQLDataType ptype1 = Main.SQLDataType.valueOf(ptype);

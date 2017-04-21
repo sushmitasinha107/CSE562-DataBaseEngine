@@ -99,7 +99,7 @@ public class ProcessQueries {
 
 	}
 		
-	public void processInnermostSelect() {
+	public void processInnermostSelect(String tblName) {
 		String temp = "";
 		Statement query_original = Main.query;
 		Statement query = null;
@@ -121,8 +121,8 @@ public class ProcessQueries {
 		Main.select = (Select) query;
 		Main.plainSelect = (PlainSelect) Main.select.getSelectBody();
 
-		Main.myTableName = Main.plainSelect.getFromItem().toString();
-		Main.tableData = Main.tableMapping.get(Main.myTableName);
+		//Main.myTableName = Main.plainSelect.getFromItem().toString();
+		Main.tableData = Main.tableMapping.get(tblName);
 
 		Main.columnOrderMapping = Main.tableData.getColumnOrderMapping();
 		Main.columnDataTypeMapping = Main.tableData.getColumnDataTypeMapping();

@@ -1,3 +1,4 @@
+
 package dubstep;
 import java.io.BufferedReader;
 import java.io.File;
@@ -15,6 +16,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.TreeMap;
+
+import org.omg.CORBA.INTERNAL;
+
 import net.sf.jsqlparser.eval.Eval;
 import net.sf.jsqlparser.expression.DateValue;
 import net.sf.jsqlparser.expression.DoubleValue;
@@ -52,8 +56,7 @@ public class Main {
 	public static HashMap<String, SelectItem> selectItemsMap = new HashMap<>();
 
 	public enum AggFunctions {
-		SUM, MIN, MAX, AVG, COUNT,
-		sum, min, max, avg, count
+		SUM, MIN, MAX, AVG, COUNT, sum, min, max, avg, count
 	};
 
 	public enum SQLDataType {
@@ -103,8 +106,8 @@ public class Main {
 
 	public static StringBuilder sbuilder = null;
 
-	//public static Column aggExprs[] = null;
-	 public static Expression aggExprs[] = null;
+	// public static Column aggExprs[] = null;
+	public static Expression aggExprs[] = null;
 	public static int numAggFunc = 0;
 	public static double aggSum = 0;
 	public static long aggCount = 0;
@@ -127,7 +130,7 @@ public class Main {
 
 	public static Map<String, String> primaryKeyIndex = new HashMap<String, String>();
 	public static List<String> primaryKeyList = new ArrayList<>();
-	
+
 	public static List<String> orderByElementsList = new ArrayList<String>();
 	public static Map<String, Integer> orderByElementsSortOrder = new HashMap<>();
 
@@ -162,8 +165,6 @@ public class Main {
 	}
 
 	public static void main(String[] args) throws ParseException, SQLException, IOException {
-		
-		
 
 		System.out.print("$>");
 		BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
@@ -197,11 +198,11 @@ public class Main {
 					select = (Select) query;
 					plainSelect = (PlainSelect) select.getSelectBody();
 
-					//orderByElementsList = plainSelect.getOrderByElements();
+					// orderByElementsList = plainSelect.getOrderByElements();
 					groupByElementsList = plainSelect.getGroupByColumnReferences();
-					
-					//System.out.println("gb::" + groupByElementsList);
-					
+
+					// System.out.println("gb::" + groupByElementsList);
+
 					limit = -1;
 					count = 0;
 
@@ -225,8 +226,6 @@ public class Main {
 												 * the data::file or map
 												 */
 					}
-					
-					
 
 					if (plainSelect.getLimit() != null) {
 						limit = plainSelect.getLimit().getRowCount();
@@ -240,10 +239,52 @@ public class Main {
 					if (fromItem instanceof Table) {
 						// no inner select
 						outermost = true;
-						pq.processInnermostSelect();
+						pq.processInnermostSelect(myTableName);
 					} else {
-						pq.populateInnerSelectStatements((SubSelect) plainSelect.getFromItem());
-						pq.processInnermostSelect();
+						String alias = fromItem.getAlias();
+
+						if (!alias.equals("") || alias != null) {
+
+							HashMap<String, String> tempMap = new HashMap<>();
+							// tableName.columnName -->> alias.columnName
+
+							for (Entry<String, String> c : columnDataTypeMapping.entrySet()) {
+								String key = c.getKey();
+								String value = c.getValue();
+								key = key.replace(myTableName, alias);
+								tempMap.put(key, value);
+							}
+							
+							HashMap<String, Integer> tempMap2 = new HashMap<>();
+
+							for (Entry<String, Integer> c : columnOrderMapping.entrySet()) {
+								String key = c.getKey();
+								Integer value = c.getValue();
+								key = key.replace(myTableName, alias);
+								tempMap2.put(key, value);
+							}
+
+							List<String> tempList = new ArrayList<>();
+							for (String pk : primaryKeyList) {
+								String newpk = pk.replace(myTableName, alias);
+								tempList.add(newpk);
+							}
+
+							TableData td = new TableData();
+
+							td.setColumnDataTypeMapping(tempMap);
+							td.setColumnOrderMapping(tempMap2);
+							td.setPrimaryKeyList(tempList);
+
+							tableMapping.put(alias, td);
+
+							pq.populateInnerSelectStatements((SubSelect) plainSelect.getFromItem());
+							pq.processInnermostSelect(alias);
+						} else {
+							pq.populateInnerSelectStatements((SubSelect) plainSelect.getFromItem());
+							pq.processInnermostSelect(myTableName);
+						}
+
 					}
 
 				} else {
@@ -265,9 +306,9 @@ public class Main {
 		aggMax = Integer.MIN_VALUE;
 		aggMin = Integer.MAX_VALUE;
 		avgTotal = 0.0;
-		
+
 		aggGroupByMap = new HashMap<>();
-		
+
 		orderOperator = false;
 	}
 
@@ -298,7 +339,7 @@ public class Main {
 			try {
 
 				while ((newRow = br.readLine()) != null) {
-					
+
 					processReadFromFile(ret);
 				}
 
@@ -392,7 +433,7 @@ public class Main {
 
 		/* where clause evaluation */
 		if (!(e == null)) {
-			
+
 			if (eval.eval(e).toBool()) {
 				if (numAggFunc > 0) {
 					computeAggregate();
@@ -474,75 +515,76 @@ public class Main {
 				sb.setLength(sb.length() - 1);
 
 			System.out.println(sb);
-		}else{
+		} else {
 
-		//System.out.println("sel:: " + Arrays.toString(selectItemsAsObject));
+			// System.out.println("sel:: " +
+			// Arrays.toString(selectItemsAsObject));
 
-		// for(Entry<String, Double[]> g : aggGroupByMap.entrySet()){
-		// System.out.println(g.getKey() + " :: " +
-		// Arrays.toString(g.getValue()));
-		// }
+			// for(Entry<String, Double[]> g : aggGroupByMap.entrySet()){
+			// System.out.println(g.getKey() + " :: " +
+			// Arrays.toString(g.getValue()));
+			// }
 
-		List<String> tempList = new ArrayList<String>();
-		for (Column c : groupByElementsList) {
-			tempList.add(c.toString());
-		}
-
-		int[] pos = new int[tempList.size()];
-		int j;
-
-		for (j = 0; j < pos.length; j++)
-			pos[j] = -1;
-
-		for (j = 0; j < selectItemsAsObject.length; j++) {
-			if (selectItemsAsObject[j] != null) {
-				pos[j] = tempList.indexOf(selectItemsAsObject[j].toString());
+			List<String> tempList = new ArrayList<String>();
+			for (Column c : groupByElementsList) {
+				tempList.add(c.toString());
 			}
-		}
 
-		// System.out.println(Arrays.toString(pos));
+			int[] pos = new int[tempList.size()];
+			int j;
 
-		// get the sel columns
-		for (Entry<String, Double[]> a : aggGroupByMap.entrySet()) {
-			sb = new StringBuilder();
-			String[] sitems = a.getKey().split(":");
-			//System.out.println(Arrays.toString(sitems));
+			for (j = 0; j < pos.length; j++)
+				pos[j] = -1;
 
-			// ignore the 0th index
-			for (j = 0; j < pos.length && pos[j] != -1; j++) {
-				if (pos.length == 1) {
-					sb.append(sitems[pos[j]]);
-				} else {
-					sb.append(sitems[pos[j] + 1]);
+			for (j = 0; j < selectItemsAsObject.length; j++) {
+				if (selectItemsAsObject[j] != null) {
+					pos[j] = tempList.indexOf(selectItemsAsObject[j].toString());
 				}
-				sb.append("|");
 			}
 
-			// now get the agg results
-			for (int i = 0; i < numAggFunc; i++) {
+			// System.out.println(Arrays.toString(pos));
 
-				if (aggNo[i] == 1) {
-					sb.append(a.getValue()[0]);
-					sb.append('|');
-				} else if (aggNo[i] == 2) {
-					sb.append(a.getValue()[1]);
-					sb.append('|');
-				} else if (aggNo[i] == 3) {
-					sb.append(a.getValue()[2]);
-					sb.append('|');
-				} else if (aggNo[i] == 4) {
-					sb.append(a.getValue()[3]);
-					sb.append('|');
-				} else if (aggNo[i] == 5) {
-					sb.append(a.getValue()[4]);
-					sb.append('|');
+			// get the sel columns
+			for (Entry<String, Double[]> a : aggGroupByMap.entrySet()) {
+				sb = new StringBuilder();
+				String[] sitems = a.getKey().split(":");
+				// System.out.println(Arrays.toString(sitems));
+
+				// ignore the 0th index
+				for (j = 0; j < pos.length && pos[j] != -1; j++) {
+					if (pos.length == 1) {
+						sb.append(sitems[pos[j]]);
+					} else {
+						sb.append(sitems[pos[j] + 1]);
+					}
+					sb.append("|");
 				}
 
+				// now get the agg results
+				for (int i = 0; i < numAggFunc; i++) {
+
+					if (aggNo[i] == 1) {
+						sb.append(a.getValue()[0]);
+						sb.append('|');
+					} else if (aggNo[i] == 2) {
+						sb.append(a.getValue()[1]);
+						sb.append('|');
+					} else if (aggNo[i] == 3) {
+						sb.append(a.getValue()[2]);
+						sb.append('|');
+					} else if (aggNo[i] == 4) {
+						sb.append(a.getValue()[3]);
+						sb.append('|');
+					} else if (aggNo[i] == 5) {
+						sb.append(a.getValue()[4]);
+						sb.append('|');
+					}
+
+				}
+				if (sb.length() > 0)
+					sb.setLength(sb.length() - 1);
+				System.out.println(sb);
 			}
-			if (sb.length() > 0)
-				sb.setLength(sb.length() - 1);
-			System.out.println(sb);
-		}
 
 		}
 	}
@@ -555,29 +597,29 @@ public class Main {
 
 		print = false;
 		aggPrint = true;
-		
+
 		boolean countOnce = false;
 		boolean sumOnce = false;
 
 		if (groupByElementsList != null) {
-			
+
 			String key = "";
-			if(groupByElementsList.size() == 1){
+			if (groupByElementsList.size() == 1) {
 				int idx = columnOrderMapping.get(groupByElementsList.get(0).toString());
 				key = values[idx];
-			}else{
-				for(int i = 0; i < groupByElementsList.size(); i++){
+			} else {
+				for (int i = 0; i < groupByElementsList.size(); i++) {
 					int idx = columnOrderMapping.get(groupByElementsList.get(i).toString());
 					key = key + ":" + values[idx];
 				}
 			}
-			
-			
 
 			for (int i = 0; i < numAggFunc; i++) {
 
-				if ((aggNo[i] == 5 || aggNo[i] == 4) && (countOnce == false)) { // count or avg
-																				
+				if ((aggNo[i] == 5 || aggNo[i] == 4) && (countOnce == false)) { // count
+																				// or
+																				// avg
+
 					countOnce = true;
 					if (groupByElementsList.size() != 0) {
 
@@ -619,7 +661,7 @@ public class Main {
 						}
 
 					} else if (aggNo[i] == 2) {
-					
+
 						if (groupByElementsList.size() != 0) {
 
 							if (!aggGroupByMap.containsKey(key)) {
@@ -638,7 +680,7 @@ public class Main {
 						}
 
 					} else if (aggNo[i] == 3) {
-						
+
 						if (groupByElementsList.size() != 0) {
 
 							if (!aggGroupByMap.containsKey(key)) {
@@ -657,7 +699,7 @@ public class Main {
 
 						}
 
-					} 
+					}
 				}
 				// if avg
 				if (aggNo[i] == 4) {
@@ -676,9 +718,9 @@ public class Main {
 
 			for (int i = 0; i < numAggFunc; i++) {
 				if (aggNo[i] == 5) {
-					if(co == false){
-					aggCount++;
-					co = true;
+					if (co == false) {
+						aggCount++;
+						co = true;
 					}
 
 				} else {
@@ -704,7 +746,6 @@ public class Main {
 
 			}
 		}
-		
 
 	}
 
@@ -769,14 +810,14 @@ public class Main {
 
 	public static Eval eval = new Eval() {
 		public PrimitiveValue eval(Column c) {
-			
-			//System.out.println("-eval-" + c);
+
+			// System.out.println("-eval-" + c);
 
 			int idx = columnOrderMapping.get(c.toString());
 			String ptype = columnDataTypeMapping.get(c.toString());
 
 			// return getReturnType(ptype, values[idx]);
-			//System.out.println(ptype);
+			// System.out.println(ptype);
 			return getReturnType(SQLDataType.valueOf(ptype), values[idx]);
 		}
 	};
