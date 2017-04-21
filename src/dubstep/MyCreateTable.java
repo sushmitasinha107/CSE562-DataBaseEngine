@@ -70,7 +70,7 @@ public class MyCreateTable {
 			}
 		}
 
-		//makePrimaryMapping(Main.primaryKeyList);
+		makePrimaryMapping(Main.primaryKeyList);
 //		for (String indexColumn : indexKeyList) {
 //			sortMyTable(Main.myTableName + "." + indexColumn, Main.primaryKeyList);
 //		}
