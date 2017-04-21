@@ -1,4 +1,4 @@
-//package dubstep;
+package dubstep;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -8,12 +8,13 @@ import java.io.InputStreamReader;
 import java.io.StringReader;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-
+import java.util.TreeMap;
 import net.sf.jsqlparser.eval.Eval;
 import net.sf.jsqlparser.expression.DateValue;
 import net.sf.jsqlparser.expression.DoubleValue;
@@ -35,6 +36,7 @@ import net.sf.jsqlparser.statement.create.table.ColumnDefinition;
 import net.sf.jsqlparser.statement.create.table.CreateTable;
 import net.sf.jsqlparser.statement.select.AllColumns;
 import net.sf.jsqlparser.statement.select.FromItem;
+import net.sf.jsqlparser.statement.select.OrderByElement;
 import net.sf.jsqlparser.statement.select.PlainSelect;
 import net.sf.jsqlparser.statement.select.Select;
 import net.sf.jsqlparser.statement.select.SelectExpressionItem;
@@ -50,7 +52,8 @@ public class Main {
 	public static HashMap<String, SelectItem> selectItemsMap = new HashMap<>();
 
 	public enum AggFunctions {
-		SUM, MIN, MAX, AVG, COUNT
+		SUM, MIN, MAX, AVG, COUNT,
+		sum, min, max, avg, count
 	};
 
 	public enum SQLDataType {
@@ -64,8 +67,10 @@ public class Main {
 	public static Map<String, Integer> columnOrderMapping = new HashMap<String, Integer>();
 	public static Map<String, String> columnDataTypeMapping = new HashMap<String, String>();
 	public static Map<String, Map> columnIndex = new HashMap<String, Map>();
+	public static Map<String, Double[]> aggGroupByMap = new HashMap<String, Double[]>();
 
-	public static List orderByElementsList = null;
+	public static List<Column> groupByElementsList = new ArrayList<Column>();
+
 	public static boolean orderOperator = false;
 	public static List<SubSelect> innerSelects = new ArrayList<>();
 
@@ -121,17 +126,21 @@ public class Main {
 	public static long count = 0;
 
 	public static Map<String, String> primaryKeyIndex = new HashMap<String, String>();
+	public static List<String> primaryKeyList = new ArrayList<>();
+	
+	public static List<String> orderByElementsList = new ArrayList<String>();
+	public static Map<String, Integer> orderByElementsSortOrder = new HashMap<>();
 
 	public static int getAggNo(AggFunctions aggName) {
-		if (aggName == AggFunctions.SUM) {
+		if (aggName == AggFunctions.SUM || aggName == AggFunctions.sum) {
 			return 1;
-		} else if (aggName == AggFunctions.MIN) {
+		} else if (aggName == AggFunctions.MIN || aggName == AggFunctions.min) {
 			return 2;
-		} else if (aggName == AggFunctions.MAX) {
+		} else if (aggName == AggFunctions.MAX || aggName == AggFunctions.max) {
 			return 3;
-		} else if (aggName == AggFunctions.AVG) {
+		} else if (aggName == AggFunctions.AVG || aggName == AggFunctions.avg) {
 			return 4;
-		} else if (aggName == AggFunctions.COUNT) {
+		} else if (aggName == AggFunctions.COUNT || aggName == AggFunctions.count) {
 			return 5;
 		}
 		return -1;
@@ -188,16 +197,36 @@ public class Main {
 					select = (Select) query;
 					plainSelect = (PlainSelect) select.getSelectBody();
 
-					orderByElementsList = plainSelect.getOrderByElements();
+					//orderByElementsList = plainSelect.getOrderByElements();
+					groupByElementsList = plainSelect.getGroupByColumnReferences();
+					
+					//System.out.println("gb::" + groupByElementsList);
+					
 					limit = -1;
 					count = 0;
 
-					if (orderByElementsList != null) {
+					if (plainSelect.getOrderByElements() != null) {
+						orderByElementsList = new ArrayList<String>();
+
+						for (OrderByElement o : plainSelect.getOrderByElements()) {
+							if (o.isAsc()) {
+								orderByElementsList.add(o.toString());
+								orderByElementsSortOrder.put(o.toString(), 1);
+
+							} else {
+								String orderByElement[] = o.toString().split(" ");
+								orderByElementsList.add(orderByElement[0]);
+								orderByElementsSortOrder.put(orderByElement[0], 2);
+							}
+						}
+
 						orderOperator = true; /*
-												 * tells us from where to read the
-												 * data::file or map
+												 * tells us from where to read
+												 * the data::file or map
 												 */
 					}
+					
+					
 
 					if (plainSelect.getLimit() != null) {
 						limit = plainSelect.getLimit().getRowCount();
@@ -235,6 +264,11 @@ public class Main {
 		aggSum = 0;
 		aggMax = Integer.MIN_VALUE;
 		aggMin = Integer.MAX_VALUE;
+		avgTotal = 0.0;
+		
+		aggGroupByMap = new HashMap<>();
+		
+		orderOperator = false;
 	}
 
 	public static void readFromFile() throws SQLException, IOException {
@@ -264,6 +298,7 @@ public class Main {
 			try {
 
 				while ((newRow = br.readLine()) != null) {
+					
 					processReadFromFile(ret);
 				}
 
@@ -279,24 +314,67 @@ public class Main {
 				e.printStackTrace();
 			}
 
-		} else { // order by present, read from the maps created
+		} else {// order by present, read from the maps created
 			e = plainSelect.getWhere();
 			reinitializeValues();
 			PrimitiveValue ret = null;
+			TreeMap orderIndexMap = new TreeMap<>();
 
-			// System.out.println(orderByElementsList);
-			Map orderIndexMap = columnIndex.get(orderByElementsList.get(0).toString());
+			String firstOrderOperator = orderByElementsList.get(0);
+			if (columnIndex.containsKey(firstOrderOperator)) {
+				orderIndexMap = (TreeMap) columnIndex.get(firstOrderOperator);
+			} else {
+				// if index not built on order by column, build it on the fly
+				MyCreateTable.sortMyTable(firstOrderOperator, tableData.getPrimaryKeyList());
+				orderIndexMap = (TreeMap) columnIndex.get(firstOrderOperator);
+			}
 
-			// System.out.println("OIM:: " + orderIndexMap);
+			// iterate through sorted hashmap to fetch rows
 
-			Iterator iterator = orderIndexMap.entrySet().iterator();
+			Iterator iterator = null;
+			if (orderByElementsSortOrder.get(firstOrderOperator) == 1) {
+				iterator = orderIndexMap.entrySet().iterator();
+			} else {
+				iterator = orderIndexMap.descendingMap().entrySet().iterator();
+			}
+
 			while (iterator.hasNext()) {
 				Map.Entry entry = (Entry) iterator.next();
-				for (String rowString : (ArrayList<String>) entry.getValue()) {
-					newRow = primaryKeyIndex.get(rowString);
-					processReadFromFile(ret);
+
+				// if multiple rows have same index value(clustered)
+				List<String> toOrderByElement2 = (ArrayList<String>) entry.getValue();
+
+				if (toOrderByElement2.size() > 1 && orderByElementsList.size() > 1) {
+					// 2 order by column criteria, then sort the cluster based
+					// on second column
+					toOrderByElement2 = MyCreateTable.sortOnIndex2(orderByElementsList.get(1), toOrderByElement2);
+
+					// print cluster in rev when desc(desc = 2)
+					if (orderByElementsSortOrder.get(orderByElementsList.get(1)) == 2) {
+						for (int i = toOrderByElement2.size() - 1; i >= 0; i--) {
+							newRow = primaryKeyIndex.get(toOrderByElement2.get(i));
+							processReadFromFile(ret);
+						}
+
+					} else {
+						for (String rowString : toOrderByElement2) {
+							// read new row from (PK,entire row ) map
+							newRow = primaryKeyIndex.get(rowString);
+							processReadFromFile(ret);
+						}
+					}
+				} else {
+
+					// clustered index
+					for (String rowString : toOrderByElement2) {
+						// read new row from (PK,entire row ) map
+						newRow = primaryKeyIndex.get(rowString);
+						processReadFromFile(ret);
+					}
 				}
+
 			}
+
 			if (numAggFunc > 0)
 				printAggregateResult();
 		}
@@ -371,31 +449,102 @@ public class Main {
 	public static void printAggregateResult() {
 
 		StringBuilder sb = new StringBuilder();
-		for (int i = 0; i < numAggFunc; i++) {
+		if (groupByElementsList == null) {
+			for (int i = 0; i < numAggFunc; i++) {
 
-			if (aggNo[i] == 1) {
-				sb.append(aggSum);
-				sb.append('|');
-			} else if (aggNo[i] == 2) {
-				sb.append(aggMin);
-				sb.append('|');
-			} else if (aggNo[i] == 3) {
-				sb.append(aggMax);
-				sb.append('|');
-			} else if (aggNo[i] == 4) {
-				sb.append(avgTotal / avgCount);
-				sb.append('|');
-			} else if (aggNo[i] == 5) {
-				sb.append(aggCount);
-				sb.append('|');
+				if (aggNo[i] == 1) {
+					sb.append(aggSum);
+					sb.append('|');
+				} else if (aggNo[i] == 2) {
+					sb.append(aggMin);
+					sb.append('|');
+				} else if (aggNo[i] == 3) {
+					sb.append(aggMax);
+					sb.append('|');
+				} else if (aggNo[i] == 4) {
+					sb.append(avgTotal / avgCount);
+					sb.append('|');
+				} else if (aggNo[i] == 5) {
+					sb.append(aggCount);
+					sb.append('|');
+				}
+			}
+
+			if (sb.length() > 0)
+				sb.setLength(sb.length() - 1);
+
+			System.out.println(sb);
+		}else{
+
+		//System.out.println("sel:: " + Arrays.toString(selectItemsAsObject));
+
+		// for(Entry<String, Double[]> g : aggGroupByMap.entrySet()){
+		// System.out.println(g.getKey() + " :: " +
+		// Arrays.toString(g.getValue()));
+		// }
+
+		List<String> tempList = new ArrayList<String>();
+		for (Column c : groupByElementsList) {
+			tempList.add(c.toString());
+		}
+
+		int[] pos = new int[tempList.size()];
+		int j;
+
+		for (j = 0; j < pos.length; j++)
+			pos[j] = -1;
+
+		for (j = 0; j < selectItemsAsObject.length; j++) {
+			if (selectItemsAsObject[j] != null) {
+				pos[j] = tempList.indexOf(selectItemsAsObject[j].toString());
 			}
 		}
 
-		if (sb.length() > 0)
-			sb.setLength(sb.length() - 1);
+		// System.out.println(Arrays.toString(pos));
 
-		System.out.println(sb);
+		// get the sel columns
+		for (Entry<String, Double[]> a : aggGroupByMap.entrySet()) {
+			sb = new StringBuilder();
+			String[] sitems = a.getKey().split(":");
+			//System.out.println(Arrays.toString(sitems));
 
+			// ignore the 0th index
+			for (j = 0; j < pos.length && pos[j] != -1; j++) {
+				if (pos.length == 1) {
+					sb.append(sitems[pos[j]]);
+				} else {
+					sb.append(sitems[pos[j] + 1]);
+				}
+				sb.append("|");
+			}
+
+			// now get the agg results
+			for (int i = 0; i < numAggFunc; i++) {
+
+				if (aggNo[i] == 1) {
+					sb.append(a.getValue()[0]);
+					sb.append('|');
+				} else if (aggNo[i] == 2) {
+					sb.append(a.getValue()[1]);
+					sb.append('|');
+				} else if (aggNo[i] == 3) {
+					sb.append(a.getValue()[2]);
+					sb.append('|');
+				} else if (aggNo[i] == 4) {
+					sb.append(a.getValue()[3]);
+					sb.append('|');
+				} else if (aggNo[i] == 5) {
+					sb.append(a.getValue()[4]);
+					sb.append('|');
+				}
+
+			}
+			if (sb.length() > 0)
+				sb.setLength(sb.length() - 1);
+			System.out.println(sb);
+		}
+
+		}
 	}
 
 	/*
@@ -406,33 +555,156 @@ public class Main {
 
 		print = false;
 		aggPrint = true;
+		
+		boolean countOnce = false;
+		boolean sumOnce = false;
 
-		for (int i = 0; i < numAggFunc; i++) {
-			if (aggNo[i] == 5) {
-				aggCount++;
-
-			} else {
-				aggExpr = (Expression) aggExprs[i];
-				answer = computeExpression();
-
-				if (aggNo[i] == 1) {
-					aggSum += answer.toDouble();
-				} else if (aggNo[i] == 2) {
-					if (answer.toDouble() < aggMin) {
-						aggMin = answer.toDouble();
-					}
-				} else if (aggNo[i] == 3) {
-					if (answer.toDouble() > aggMax) {
-						aggMax = answer.toDouble();
-					}
-
-				} else if (aggNo[i] == 4) {
-					avgCount++;
-					avgTotal += answer.toDouble();
+		if (groupByElementsList != null) {
+			
+			String key = "";
+			if(groupByElementsList.size() == 1){
+				int idx = columnOrderMapping.get(groupByElementsList.get(0).toString());
+				key = values[idx];
+			}else{
+				for(int i = 0; i < groupByElementsList.size(); i++){
+					int idx = columnOrderMapping.get(groupByElementsList.get(i).toString());
+					key = key + ":" + values[idx];
 				}
 			}
+			
+			
 
+			for (int i = 0; i < numAggFunc; i++) {
+
+				if ((aggNo[i] == 5 || aggNo[i] == 4) && (countOnce == false)) { // count or avg
+																				
+					countOnce = true;
+					if (groupByElementsList.size() != 0) {
+
+						if (!aggGroupByMap.containsKey(key)) {
+
+							Double[] arr = { 0.0, (double) Integer.MAX_VALUE, (double) Integer.MIN_VALUE, 0.0, 1.0 };
+							aggGroupByMap.put(key, arr);
+
+						} else {
+							Double[] arr = aggGroupByMap.get(key);
+							arr[4] = arr[4] + 1;
+							aggGroupByMap.put(key, arr);
+						}
+
+					}
+				}
+
+				if (aggNo[i] != 5) {
+					aggExpr = (Expression) aggExprs[i];
+					answer = computeExpression();
+
+					if ((aggNo[i] == 1 || aggNo[i] == 4) && (sumOnce == false)) {
+
+						sumOnce = true;
+						if (groupByElementsList.size() != 0) {
+
+							if (!aggGroupByMap.containsKey(key)) {
+
+								Double[] arr = { answer.toDouble(), (double) Integer.MAX_VALUE,
+										(double) Integer.MIN_VALUE, 0.0, 0.0 };
+								aggGroupByMap.put(key, arr);
+
+							} else {
+								Double[] arr = aggGroupByMap.get(key);
+								arr[0] = arr[0] + answer.toDouble();
+								aggGroupByMap.put(key, arr);
+							}
+
+						}
+
+					} else if (aggNo[i] == 2) {
+					
+						if (groupByElementsList.size() != 0) {
+
+							if (!aggGroupByMap.containsKey(key)) {
+
+								Double[] arr = { answer.toDouble(), answer.toDouble(), answer.toDouble(), 0.0, 0.0 };
+								aggGroupByMap.put(key, arr);
+
+							} else {
+								Double[] arr = aggGroupByMap.get(key);
+								if (answer.toDouble() < arr[1]) {
+									arr[1] = answer.toDouble();
+								}
+								aggGroupByMap.put(key, arr);
+							}
+
+						}
+
+					} else if (aggNo[i] == 3) {
+						
+						if (groupByElementsList.size() != 0) {
+
+							if (!aggGroupByMap.containsKey(key)) {
+
+								Double[] arr = { answer.toDouble(), (double) answer.toDouble(), answer.toDouble(), 0.0,
+										0.0 };
+								aggGroupByMap.put(key, arr);
+
+							} else {
+								Double[] arr = aggGroupByMap.get(key);
+								if (answer.toDouble() > arr[2]) {
+									arr[2] = answer.toDouble();
+								}
+								aggGroupByMap.put(key, arr);
+							}
+
+						}
+
+					} 
+				}
+				// if avg
+				if (aggNo[i] == 4) {
+
+					Double[] arr = aggGroupByMap.get(key);
+					arr[3] = arr[0] / arr[4];
+					aggGroupByMap.put(key, arr);
+				}
+
+			}
+		} else {
+
+			print = false;
+			aggPrint = true;
+			boolean co = false;
+
+			for (int i = 0; i < numAggFunc; i++) {
+				if (aggNo[i] == 5) {
+					if(co == false){
+					aggCount++;
+					co = true;
+					}
+
+				} else {
+					aggExpr = (Expression) aggExprs[i];
+					answer = computeExpression();
+
+					if (aggNo[i] == 1) {
+						aggSum += answer.toDouble();
+					} else if (aggNo[i] == 2) {
+						if (answer.toDouble() < aggMin) {
+							aggMin = answer.toDouble();
+						}
+					} else if (aggNo[i] == 3) {
+						if (answer.toDouble() > aggMax) {
+							aggMax = answer.toDouble();
+						}
+
+					} else if (aggNo[i] == 4) {
+						avgCount++;
+						avgTotal += answer.toDouble();
+					}
+				}
+
+			}
 		}
+		
 
 	}
 

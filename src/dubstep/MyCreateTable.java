@@ -1,4 +1,4 @@
-//package dubstep;
+package dubstep;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -6,14 +6,12 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.TreeMap;
 
-import net.sf.jsqlparser.expression.DateValue;
-import net.sf.jsqlparser.expression.DoubleValue;
-import net.sf.jsqlparser.expression.LongValue;
-import net.sf.jsqlparser.expression.StringValue;
 import net.sf.jsqlparser.statement.create.table.ColumnDefinition;
 import net.sf.jsqlparser.statement.create.table.CreateTable;
 import net.sf.jsqlparser.statement.create.table.Index;
@@ -22,7 +20,6 @@ public class MyCreateTable {
 
 	public static Index primaryKey;
 	public static Index indexKey;
-	public static List<String> primaryKeyList;
 	public static List<String> indexKeyList;
 
 	public static void createTable() throws IOException {
@@ -30,7 +27,7 @@ public class MyCreateTable {
 		Main.table = (CreateTable) Main.query;
 		List<Index> tableIndex = Main.table.getIndexes();
 		List<String> indexKeyList = new ArrayList<>();
-		List<String> primaryKeyList = new ArrayList<>();
+		Main.primaryKeyList = new ArrayList<>();
 
 		Main.myTableName = Main.table.getTable().getName();
 		Main.tableData = new TableData();
@@ -53,6 +50,7 @@ public class MyCreateTable {
 		Main.tableData.setColumnDataTypeMapping(Main.columnDataTypeMapping);
 		Main.tableData.setColumnOrderMapping(Main.columnOrderMapping);
 
+		Main.tableData.setPrimaryKeyList(Main.primaryKeyList);
 		Main.tableMapping.put(Main.myTableName, Main.tableData);
 
 		if (tableIndex != null) {
@@ -65,16 +63,15 @@ public class MyCreateTable {
 				else {
 					for (String pkCol : indxValue.getColumnsNames()) {
 						String pk = Main.myTableName + "." + pkCol;
-						primaryKeyList.add(pk);
+						Main.primaryKeyList.add(pk);
 					}
 				}
 			}
 		}
 
-		makePrimaryMapping(primaryKeyList);
+		makePrimaryMapping(Main.primaryKeyList);
 		for (String indexColumn : indexKeyList) {
-
-			sortMyTable(Main.myTableName + "." + indexColumn, primaryKeyList);
+			sortMyTable(Main.myTableName + "." + indexColumn, Main.primaryKeyList);
 		}
 	}
 
@@ -82,7 +79,7 @@ public class MyCreateTable {
 
 		File file;
 		if (System.getProperty("user.home").contains("deepti")) {
-			System.out.println("local");
+			System.out.println("localq");
 			file = new File(Main.myTableName + ".csv");
 		} else {
 
@@ -213,5 +210,71 @@ public class MyCreateTable {
 			e.printStackTrace();
 		}
 
+	}
+
+	public static List<String> sortOnIndex2(String columnName, List<String> PKList) throws IOException {
+
+		List<String> PKListSorted = new ArrayList<>();
+
+		String newRow = "";
+		String keyBuilder = "";
+		Map map = new TreeMap<>();
+		String values[] = null;
+		List<String> list = null;
+		int idx = -1;
+		int idpk = -1;
+		for (String rowString : PKList) {
+			// System.out.println(newRow);
+			newRow = Main.primaryKeyIndex.get(rowString);
+			values = newRow.split("\\|", -1);
+			idx = Main.columnOrderMapping.get(columnName);
+			String ptype = Main.columnDataTypeMapping.get(columnName);
+			Main.SQLDataType ptype1 = Main.SQLDataType.valueOf(ptype);
+			if (ptype1 == Main.SQLDataType.sqlint) {
+				int key = Integer.parseInt(values[idx]);
+				if (map.containsKey(key)) {
+					list = (List<String>) map.get(key);
+					list.add(rowString);
+					map.put(key, list);
+				} else {
+					list = new ArrayList<String>();
+					list.add(rowString);
+					map.put(key, list);
+				}
+			} else if (ptype1 == Main.SQLDataType.DECIMAL || ptype1 == Main.SQLDataType.decimal) {
+				Double key = Double.parseDouble(values[idx]);
+				if (map.containsKey(key)) {
+					list = (List<String>) map.get(key);
+					list.add(rowString);
+					map.put(key, list);
+				} else {
+					list = new ArrayList<String>();
+
+					list.add(rowString);
+					map.put(key, list);
+				}
+			} else {
+				String key = values[idx];
+				if (map.containsKey(key)) {
+					list = (List<String>) map.get(key);
+					list.add(rowString);
+					map.put(key, list);
+				} else {
+					list = new ArrayList<String>();
+					
+					
+					list.add(rowString);
+					map.put(key, list);
+				}
+			}
+		}
+		Iterator iterator = map.entrySet().iterator();
+		while (iterator.hasNext()) {
+			Map.Entry entry = (Entry) iterator.next();
+			for (String rowS : (ArrayList<String>) entry.getValue()) {
+				PKListSorted.add(rowS);
+			}
+		}
+		return PKListSorted;
 	}
 }

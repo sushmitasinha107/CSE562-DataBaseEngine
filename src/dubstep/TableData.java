@@ -1,4 +1,5 @@
-//package dubstep;
+package dubstep;
+import java.util.List;
 import java.util.Map;
 
 public class TableData {
@@ -6,6 +7,7 @@ public class TableData {
 	Map<String, Integer> columnOrderMapping;
 	Map<String, String> columnDataTypeMapping;
 	Map<String, Map> columnIndex;
+	List<String> primaryKeyList;
 
 	public Map<String, Integer> getColumnOrderMapping() {
 		return columnOrderMapping;
@@ -31,5 +33,14 @@ public class TableData {
 		this.columnIndex = columnIndex;
 	}
 
+	public List<String> getPrimaryKeyList() {
+		return primaryKeyList;
+	}
+
+	public void setPrimaryKeyList(List<String> primaryKeyList) {
+		this.primaryKeyList = primaryKeyList;
+	}
+
+	
 
 }
