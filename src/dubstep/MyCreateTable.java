@@ -1,5 +1,5 @@
 
-package dubstep;
+//package dubstep;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -92,28 +92,56 @@ public class MyCreateTable {
 		String newRow = "";
 		String keyBuilder = "";
 		int idx = -1;
+		int idx1 = -1;
+		int idx2 = -1;
 		try {
-
-			// keyBuilder = new StringBuilder();
-			while ((newRow = br.readLine()) != null) {
-
-				values = newRow.split("\\|", -1);
+			
+			if (primaryKeyList.size() == 1) {
+				idx = Main.columnOrderMapping.get(primaryKeyList.get(0));
 				
-
-				if (primaryKeyList.size() != 0) {
-					if (primaryKeyList.size() == 1) {
-
-						idx = Main.columnOrderMapping.get(primaryKeyList.get(0));
-						Main.primaryKeyIndex.put(values[idx], newRow);
-					} else {
-						idx = Main.columnOrderMapping.get(primaryKeyList.get(0));
-						keyBuilder = values[idx];
-						idx = Main.columnOrderMapping.get(primaryKeyList.get(1));
-						Main.primaryKeyIndex.put(keyBuilder.concat(values[idx]), newRow);
-					}
+				while ((newRow = br.readLine()) != null) {
+					values = newRow.split("\\|", -1);
+					Main.primaryKeyIndex.put(values[idx], newRow);
 				}
-
+				
+			}else{
+				idx1 = Main.columnOrderMapping.get(primaryKeyList.get(0));
+				idx2 = Main.columnOrderMapping.get(primaryKeyList.get(1));
+				
+				
+				while ((newRow = br.readLine()) != null) {
+					values = newRow.split("\\|", -1);
+					keyBuilder = values[idx1];
+					Main.primaryKeyIndex.put(keyBuilder.concat(values[idx2]), newRow);
+				}
+				
 			}
+			
+			
+			
+			
+			
+
+//			// keyBuilder = new StringBuilder();
+//			while ((newRow = br.readLine()) != null) {
+//
+//				values = newRow.split("\\|", -1);
+//				
+//
+//				if (primaryKeyList.size() != 0) {
+//					if (primaryKeyList.size() == 1) {
+//
+//						idx = Main.columnOrderMapping.get(primaryKeyList.get(0));
+//						Main.primaryKeyIndex.put(values[idx], newRow);
+//					} else {
+//						idx = Main.columnOrderMapping.get(primaryKeyList.get(0));
+//						keyBuilder = values[idx];
+//						idx = Main.columnOrderMapping.get(primaryKeyList.get(1));
+//						Main.primaryKeyIndex.put(keyBuilder.concat(values[idx]), newRow);
+//					}
+//				}
+//
+//			}
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
