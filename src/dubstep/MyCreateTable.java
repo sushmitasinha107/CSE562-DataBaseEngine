@@ -71,9 +71,9 @@ public class MyCreateTable {
 		}
 
 		makePrimaryMapping(Main.primaryKeyList);
-//		for (String indexColumn : indexKeyList) {
-//			sortMyTable(Main.myTableName + "." + indexColumn, Main.primaryKeyList);
-//		}
+		for (String indexColumn : indexKeyList) {
+			sortMyTable(Main.myTableName + "." + indexColumn, Main.primaryKeyList);
+		}
 	}
 
 	private static void makePrimaryMapping(List<String> primaryKeyList) throws FileNotFoundException {
