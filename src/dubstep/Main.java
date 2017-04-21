@@ -9,15 +9,12 @@ import java.io.InputStreamReader;
 import java.io.StringReader;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.TreeMap;
-
-import org.omg.CORBA.INTERNAL;
 
 import net.sf.jsqlparser.eval.Eval;
 import net.sf.jsqlparser.expression.DateValue;
@@ -38,7 +35,6 @@ import net.sf.jsqlparser.schema.Table;
 import net.sf.jsqlparser.statement.Statement;
 import net.sf.jsqlparser.statement.create.table.ColumnDefinition;
 import net.sf.jsqlparser.statement.create.table.CreateTable;
-import net.sf.jsqlparser.statement.select.AllColumns;
 import net.sf.jsqlparser.statement.select.FromItem;
 import net.sf.jsqlparser.statement.select.OrderByElement;
 import net.sf.jsqlparser.statement.select.PlainSelect;
@@ -133,6 +129,8 @@ public class Main {
 
 	public static List<String> orderByElementsList = new ArrayList<String>();
 	public static Map<String, Integer> orderByElementsSortOrder = new HashMap<>();
+	
+	public static boolean isDone = false;
 
 	public static int getAggNo(AggFunctions aggName) {
 		if (aggName == AggFunctions.SUM || aggName == AggFunctions.sum) {
@@ -380,6 +378,11 @@ public class Main {
 			}
 
 			while (iterator.hasNext()) {
+				
+				if(isDone){
+					break;
+				}
+				
 				Map.Entry entry = (Entry) iterator.next();
 
 				// if multiple rows have same index value(clustered)
@@ -415,6 +418,7 @@ public class Main {
 				}
 
 			}
+			
 
 			if (numAggFunc > 0)
 				printAggregateResult();
@@ -761,6 +765,11 @@ public class Main {
 					outermost = false;
 				}
 
+			}
+			//System.out.println("count and limit:: " + count + " : " + limit);
+			if(count >= limit){
+				//System.out.println("------------");
+				isDone = true;
 			}
 		} else {
 			sbuilder = new StringBuilder();

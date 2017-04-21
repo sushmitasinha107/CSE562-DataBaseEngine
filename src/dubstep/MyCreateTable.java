@@ -71,6 +71,15 @@ public class MyCreateTable {
 		}
 
 		makePrimaryMapping(Main.primaryKeyList);
+		
+		//System.out.println(Main.primaryKeyList);
+		
+		//indexKeyList.addAll(Main.primaryKeyList);
+		
+		for (String indexColumn : Main.primaryKeyList) {
+			sortMyTable(indexColumn, Main.primaryKeyList);
+		}
+		
 		for (String indexColumn : indexKeyList) {
 			sortMyTable(Main.myTableName + "." + indexColumn, Main.primaryKeyList);
 		}
