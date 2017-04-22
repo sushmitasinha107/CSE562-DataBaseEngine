@@ -56,7 +56,7 @@ public class Main {
 	};
 
 	public enum SQLDataType {
-		string, varchar, sqlchar, sqlint, DECIMAL, DATE, decimal, date
+		string, varchar, sqlchar, sqlint, DECIMAL, DATE, decimal, date, STRING, VARCHAR
 	};
 
 	public static Main mainObj = new Main();
@@ -152,7 +152,7 @@ public class Main {
 
 		if (ptype == SQLDataType.sqlint) {
 			return new LongValue(value);
-		} else if (ptype == SQLDataType.varchar || ptype == SQLDataType.sqlchar || ptype == SQLDataType.string) {
+		} else if (ptype == SQLDataType.varchar || ptype == SQLDataType.sqlchar || ptype == SQLDataType.string || ptype == SQLDataType.VARCHAR || ptype == SQLDataType.STRING) {
 			return new StringValue(value);
 		} else if (ptype == SQLDataType.DATE || ptype == SQLDataType.date) {
 			return new DateValue(value);
