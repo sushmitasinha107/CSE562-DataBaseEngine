@@ -515,6 +515,10 @@ public class Main {
 					sb.append(aggResults.get(aggAlias[i]));
 					sb.append('|');
 				}
+				if(aggNo[i] == 5 && aggResults.get(aggAlias[i]) == null){
+					sb.append(0);
+					sb.append('|');
+				}
 			}
 
 			if (sb.length() > 0) {
