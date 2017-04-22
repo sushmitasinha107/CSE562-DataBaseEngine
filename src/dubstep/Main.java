@@ -9,15 +9,12 @@ import java.io.InputStreamReader;
 import java.io.StringReader;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.TreeMap;
-
-import org.omg.CORBA.INTERNAL;
 
 import net.sf.jsqlparser.eval.Eval;
 import net.sf.jsqlparser.expression.DateValue;
@@ -38,7 +35,6 @@ import net.sf.jsqlparser.schema.Table;
 import net.sf.jsqlparser.statement.Statement;
 import net.sf.jsqlparser.statement.create.table.ColumnDefinition;
 import net.sf.jsqlparser.statement.create.table.CreateTable;
-import net.sf.jsqlparser.statement.select.AllColumns;
 import net.sf.jsqlparser.statement.select.FromItem;
 import net.sf.jsqlparser.statement.select.OrderByElement;
 import net.sf.jsqlparser.statement.select.PlainSelect;
@@ -109,13 +105,12 @@ public class Main {
 	// public static Column aggExprs[] = null;
 	public static Expression aggExprs[] = null;
 	public static int numAggFunc = 0;
-	public static double aggSum = 0;
 	public static long aggCount = 0;
-	public static double aggMin = Integer.MAX_VALUE;
-	public static double aggMax = Integer.MIN_VALUE;
 	public static double aggAvg = 0.0;
 	public static double avgTotal = 0.0;
 	public static int[] aggNo = null;
+	public static String[] aggAlias = null;
+	public static HashMap<String, Double> aggResults = new HashMap<>();
 
 	public static AggFunctions aggFunctions;
 	public static SQLDataType sqlDataType;
@@ -137,7 +132,7 @@ public class Main {
 	public static boolean line = false;
 
 	public static boolean isDone = false;
-	
+
 	public static int getAggNo(AggFunctions aggName) {
 		if (aggName == AggFunctions.SUM || aggName == AggFunctions.sum) {
 			return 1;
@@ -197,11 +192,11 @@ public class Main {
 				} else if (query instanceof Select) { // select queries
 
 					reinitializeValues();
-					
+
 					count = 0;
 					limit = -1;
 					isDone = false;
-					
+
 					innerSelects = new ArrayList<>(); // stores nested select
 														// statements
 					pq = new ProcessQueries();
@@ -215,8 +210,6 @@ public class Main {
 					groupByElementsList = plainSelect.getGroupByColumnReferences();
 
 					// System.out.println("gb::" + groupByElementsList);
-
-					
 
 					if (plainSelect.getOrderByElements() != null) {
 						orderByElementsList = new ArrayList<String>();
@@ -314,15 +307,13 @@ public class Main {
 		avgCount = 0;
 		aggAns = 0.0;
 		aggCount = 0;
-		aggSum = 0;
-		aggMax = Integer.MIN_VALUE;
-		aggMin = Integer.MAX_VALUE;
 		avgTotal = 0.0;
 
 		aggGroupByMap = new HashMap<>();
+		aggResults = new HashMap<>();
 
 		orderOperator = false;
-		
+
 	}
 
 	public static void readFromFile() throws SQLException, IOException {
@@ -395,11 +386,11 @@ public class Main {
 			}
 
 			while (iterator.hasNext()) {
-				
-				if(isDone){
+
+				if (isDone) {
 					break;
 				}
-				
+
 				Map.Entry entry = (Entry) iterator.next();
 
 				// System.out.println("--" + entry);
@@ -515,24 +506,10 @@ public class Main {
 
 		StringBuilder sb = new StringBuilder();
 		if (groupByElementsList == null) {
-			for (int i = 0; i < numAggFunc; i++) {
 
-				if (aggNo[i] == 1) {
-					sb.append(aggSum);
-					sb.append('|');
-				} else if (aggNo[i] == 2) {
-					sb.append(aggMin);
-					sb.append('|');
-				} else if (aggNo[i] == 3) {
-					sb.append(aggMax);
-					sb.append('|');
-				} else if (aggNo[i] == 4) {
-					sb.append(avgTotal / avgCount);
-					sb.append('|');
-				} else if (aggNo[i] == 5) {
-					sb.append(aggCount);
-					sb.append('|');
-				}
+			for (int i = 0; i < aggAlias.length; i++) {
+				sb.append(aggResults.get(aggAlias[i]));
+				sb.append('|');
 			}
 
 			if (sb.length() > 0)
@@ -540,14 +517,6 @@ public class Main {
 
 			System.out.println(sb);
 		} else {
-
-			// System.out.println("sel:: " +
-			// Arrays.toString(selectItemsAsObject));
-
-			// for(Entry<String, Double[]> g : aggGroupByMap.entrySet()){
-			// System.out.println(g.getKey() + " :: " +
-			// Arrays.toString(g.getValue()));
-			// }
 
 			List<String> tempList = new ArrayList<String>();
 			for (Column c : groupByElementsList) {
@@ -738,13 +707,15 @@ public class Main {
 
 			print = false;
 			aggPrint = true;
-			boolean co = false;
 
 			for (int i = 0; i < numAggFunc; i++) {
 				if (aggNo[i] == 5) {
-					if (co == false) {
-						aggCount++;
-						co = true;
+					if (!aggResults.containsKey(aggAlias[i])) {
+						aggResults.put(aggAlias[i], 1.0);
+					} else {
+						Double c = aggResults.get(aggAlias[i]);
+						c = c + 1;
+						aggResults.put(aggAlias[i], c);
 					}
 
 				} else {
@@ -752,19 +723,44 @@ public class Main {
 					answer = computeExpression();
 
 					if (aggNo[i] == 1) {
-						aggSum += answer.toDouble();
-					} else if (aggNo[i] == 2) {
-						if (answer.toDouble() < aggMin) {
-							aggMin = answer.toDouble();
+
+						if (!aggResults.containsKey(aggAlias[i])) {
+							aggResults.put(aggAlias[i], answer.toDouble());
+						} else {
+							Double sum = aggResults.get(aggAlias[i]) + answer.toDouble();
+							aggResults.put(aggAlias[i], sum);
 						}
+
+					} else if (aggNo[i] == 2) {
+
+						if (!aggResults.containsKey(aggAlias[i])) {
+							aggResults.put(aggAlias[i], answer.toDouble());
+						} else {
+							Double min = aggResults.get(aggAlias[i]);
+							if (answer.toDouble() < min) {
+								min = answer.toDouble();
+								aggResults.put(aggAlias[i], min);
+							}
+
+						}
+
 					} else if (aggNo[i] == 3) {
-						if (answer.toDouble() > aggMax) {
-							aggMax = answer.toDouble();
+
+						if (!aggResults.containsKey(aggAlias[i])) {
+							aggResults.put(aggAlias[i], answer.toDouble());
+						} else {
+							Double max = aggResults.get(aggAlias[i]);
+							if (answer.toDouble() > max) {
+								max = answer.toDouble();
+								aggResults.put(aggAlias[i], max);
+							}
+
 						}
 
 					} else if (aggNo[i] == 4) {
 						avgCount++;
 						avgTotal += answer.toDouble();
+						aggResults.put(aggAlias[i], avgTotal / avgCount);
 					}
 				}
 
@@ -779,11 +775,11 @@ public class Main {
 			if (outermost && ((limit >= 1 && count < limit) || limit == -1)) {
 				if (values != null) {
 					StringBuilder sb = new StringBuilder();
-					for(int i = 0; i < values.length; i++){
-						if(values[i] != null){
-						sb.append(values[i]);
-						sb.append("|");
-						}else{
+					for (int i = 0; i < values.length; i++) {
+						if (values[i] != null) {
+							sb.append(values[i]);
+							sb.append("|");
+						} else {
 							break;
 						}
 					}
@@ -798,8 +794,8 @@ public class Main {
 				}
 
 			}
-			if(count >= limit && limit != -1){
-				//System.out.println("------------");
+			if (count >= limit && limit != -1) {
+				// System.out.println("------------");
 				isDone = true;
 			}
 		} else {
@@ -843,11 +839,9 @@ public class Main {
 			} else {
 				newRow = sbuilder.toString();
 			}
-			if(count >= limit && limit != -1){
-				//System.out.println("------------");
+			if (count >= limit && limit != -1) {
 				isDone = true;
 			}
-			// System.out.println("new row: " + newRow);
 		}
 
 	}

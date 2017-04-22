@@ -147,7 +147,8 @@ public class ProcessQueries {
 		Main.selectItemsAsObject = new SelectItem[Main.plainSelect.getSelectItems().size()];
 		Main.aggNo = new int[Main.plainSelect.getSelectItems().size()];
 		Main.aggExprs = new Expression[Main.plainSelect.getSelectItems().size()];
-
+		Main.aggAlias = new String[Main.plainSelect.getSelectItems().size()];
+		
 		int i = 0, j = 0;
 		for (SelectItem sitem : Main.plainSelect.getSelectItems()) {
 			if (sitem instanceof AllColumns) {
@@ -160,6 +161,7 @@ public class ProcessQueries {
 					Main.aggName = ((Function) Main.selExp).getName();
 					Main.aggFunctions = Main.AggFunctions.valueOf(Main.aggName);
 					Main.aggNo[i] = Main.getAggNo(Main.aggFunctions);
+					Main.aggAlias[i] = ((SelectExpressionItem)sitem).getAlias().toString();
 
 					if (Main.aggNo[i] != 5) {
 						//System.out.println("--" + Main.selExp);
