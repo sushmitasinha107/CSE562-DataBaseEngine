@@ -189,8 +189,8 @@ public class Main {
 					ct.createTable();
 
 					long endtime = System.currentTimeMillis();
-					System.out.println("time taken::" + (endtime - starttime));
-					System.out.println("args::" + args[1]);
+					System.out.println("time taken::" + (endtime - starttime) + " ::: " + args[1]);
+					//System.out.println("args::" + args[1]);
 
 				} else if (query instanceof Select) { // select queries
 
