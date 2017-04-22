@@ -165,6 +165,7 @@ public class Main {
 
 	public static void main(String[] args) throws ParseException, SQLException, IOException {
 
+		System.out.println("args::" + args[1]);
 		System.out.print("$>");
 		BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
 
