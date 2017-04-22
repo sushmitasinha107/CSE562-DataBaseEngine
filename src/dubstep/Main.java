@@ -67,7 +67,10 @@ public class Main {
 	public static Map<String, String> columnDataTypeMapping = new HashMap<String, String>();
 	public static Map<String, Map> columnIndex = new HashMap<String, Map>();
 	public static Map<String, Double[]> aggGroupByMap = new HashMap<String, Double[]>();
-
+	public static List<String> columnIndexOnDisk = new ArrayList<String>();
+	
+	
+	
 	public static List<Column> groupByElementsList = new ArrayList<Column>();
 
 	public static boolean orderOperator = false;
@@ -124,6 +127,8 @@ public class Main {
 	public static long count = 0;
 
 	public static Map<Long, String[]> primaryKeyIndex = new HashMap<Long, String[]>();
+	public static Map<Long, String> primaryKeyIndexOD = new HashMap<Long, String>();
+	
 	public static List<String> primaryKeyList = new ArrayList<>();
 
 	public static List<String> orderByElementsList = new ArrayList<String>();
@@ -133,6 +138,12 @@ public class Main {
 
 	public static boolean isDone = false;
 
+	
+	
+	public static boolean inmem = false;
+	
+	
+	
 	public static int getAggNo(AggFunctions aggName) {
 		if (aggName == AggFunctions.SUM || aggName == AggFunctions.sum) {
 			return 1;
@@ -164,6 +175,15 @@ public class Main {
 	}
 
 	public static void main(String[] args) throws ParseException, SQLException, IOException {
+
+		String phase = args[1];
+		if (phase.equals("--in-mem")) {
+			inmem = true;
+			System.out.println("inmem");
+		} else {
+			inmem = false;
+			System.out.println("ondisk");
+		}
 
 		System.out.print("$>");
 		BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
@@ -324,7 +344,7 @@ public class Main {
 		if (orderOperator == false) {
 
 			File file;
-			if (System.getProperty("user.home").contains("deepti")) {
+			if (System.getProperty("user.home").contains("deepti")||System.getProperty("user.home").contains("sushmitasinha")) {
 				System.out.println("local");
 				file = new File(myTableName + ".csv");
 			} else {
@@ -365,14 +385,17 @@ public class Main {
 			e = plainSelect.getWhere();
 			reinitializeValues();
 			PrimitiveValue ret = null;
+			String firstOrderOperator = orderByElementsList.get(0);
+			if(inmem){
+			//inmem
 			TreeMap orderIndexMap = new TreeMap<>();
 
-			String firstOrderOperator = orderByElementsList.get(0);
+			
 			if (columnIndex.containsKey(firstOrderOperator)) {
 				orderIndexMap = (TreeMap) columnIndex.get(firstOrderOperator);
 			} else {
 				// if index not built on order by column, build it on the fly
-				MyCreateTable.sortMyTable(firstOrderOperator, tableData.getPrimaryKeyList());
+				MyCreateTable.sortMyTable(firstOrderOperator, tableData.getPrimaryKeyList(),"select");
 				orderIndexMap = (TreeMap) columnIndex.get(firstOrderOperator);
 			}
 
@@ -429,8 +452,94 @@ public class Main {
 
 			}
 
+			
+			
+			
+			
 			if (numAggFunc > 0)
 				printAggregateResult();
+			//-----------inmem end-----
+			}
+			else{
+				//-----------ondisk start-----
+				
+				File file;
+				String firstOp = "";
+				if (Main.orderByElementsSortOrder.get(firstOrderOperator) == 1)
+					firstOp = firstOrderOperator + "1";
+				else
+					firstOp = firstOrderOperator + "2";
+
+				if (columnIndexOnDisk.contains(firstOp)) {
+					if (System.getProperty("user.home").contains("deepti")
+							|| System.getProperty("user.home").contains("sushmitasinha")) {
+						// System.out.println("localcolumnIndexOnDisk");
+						if (Main.orderByElementsSortOrder.get(firstOrderOperator) == 1) {
+							file = new File(firstOrderOperator + "1.csv");
+						} else {
+							file = new File(firstOrderOperator + "2.csv");
+						}
+
+					} else {
+
+						if (Main.orderByElementsSortOrder.get(firstOrderOperator) == 1) {
+							file = new File("data/" + firstOrderOperator + "1.csv");
+						} else {
+							file = new File("data/" + firstOrderOperator + "2.csv");
+						}
+						//file = new File("data/" + firstOrderOperator + ".csv");
+					}
+
+				} else {
+					// if index not built on order by column, build it on the
+					// fly
+					MyCreateTable.sortMyTable(firstOrderOperator, tableData.getPrimaryKeyList(), "select");
+					if (System.getProperty("user.home").contains("deepti")
+							|| System.getProperty("user.home").contains("sushmitasinha")) {
+						System.out.println("local");
+						if (Main.orderByElementsSortOrder.get(firstOrderOperator) == 1) {
+							file = new File(firstOrderOperator + "1.csv");
+						} else {
+							file = new File(firstOrderOperator + "2.csv");
+						}
+					} else {
+						file = new File("data/" + firstOrderOperator + ".csv");
+					}
+				}
+
+				BufferedReader br = new BufferedReader(new FileReader(file));
+				// get the where clause
+				e = plainSelect.getWhere();
+				// reinitializeValues();
+
+				ret = null;
+
+				try {
+
+					while ((newRow = br.readLine()) != null) {
+
+						values = newRow.split("\\|", -1);
+						processReadFromFile(ret);
+					}
+
+					/*
+					 * done with file reading...if aggregate function, then
+					 * print after this and not in printToConsole
+					 */
+
+					if (numAggFunc > 0)
+						printAggregateResult();
+
+				} catch (FileNotFoundException e) {
+					e.printStackTrace();
+				}
+
+				
+				//-----------ondisk end-----
+			}
+			
+			
+			
 		}
 	}
 
