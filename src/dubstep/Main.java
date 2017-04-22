@@ -780,8 +780,12 @@ public class Main {
 				if (values != null) {
 					StringBuilder sb = new StringBuilder();
 					for(int i = 0; i < values.length; i++){
+						if(values[i] != null){
 						sb.append(values[i]);
 						sb.append("|");
+						}else{
+							break;
+						}
 					}
 					if (sb.length() > 0)
 						sb.setLength(sb.length() - 1);
