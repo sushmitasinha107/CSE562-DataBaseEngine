@@ -505,6 +505,7 @@ public class Main {
 				} else {
 					// if index not built on order by column, build it on the
 					// fly
+                    
 					MyCreateTable.sortMyTable(firstOrderOperator, tableData.getPrimaryKeyList(), "select");
 					if (System.getProperty("user.home").contains("deepti")
 							|| System.getProperty("user.home").contains("sushmitasinha")) {
@@ -517,6 +518,14 @@ public class Main {
 					} else {
 						file = new File("data/" + firstOrderOperator + ".csv");
 					}
+				}
+
+				if (System.getProperty("user.home").contains("deepti")) {
+					System.out.println("localq");
+					file = new File(Main.myTableName + ".csv");
+				} else {
+
+				file = new File("data/" + Main.myTableName + ".csv");
 				}
 
 				BufferedReader br = new BufferedReader(new FileReader(file));
