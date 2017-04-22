@@ -86,7 +86,7 @@ public class MyCreateTable {
 		for (String indexColumn : indexKeyList) {
 			sortMyTable(Main.myTableName + "." + indexColumn, Main.primaryKeyList, "create");
 		}
-		
+		/*
 		
 		if (!Main.inmem) {
 			if(Main.myTableName.equals("LINEITEM")){
@@ -96,7 +96,7 @@ public class MyCreateTable {
 				
 			}
 			
-		}
+		}*/
 	}
 
 	private static String getNext(StringTokenizer st){  
