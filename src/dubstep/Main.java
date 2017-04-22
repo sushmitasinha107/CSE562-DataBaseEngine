@@ -154,7 +154,7 @@ public class Main {
 			return new LongValue(value);
 		} else if (ptype == SQLDataType.varchar || ptype == SQLDataType.sqlchar || ptype == SQLDataType.string
 				|| ptype == SQLDataType.VARCHAR || ptype == SQLDataType.STRING) {
-			return new StringValue(value);
+			return new StringValue(value.toUpperCase());
 		} else if (ptype == SQLDataType.DATE || ptype == SQLDataType.date) {
 			return new DateValue(value);
 		} else if (ptype == SQLDataType.DECIMAL || ptype == SQLDataType.decimal) {
@@ -189,7 +189,7 @@ public class Main {
 					ct.createTable();
 
 					long endtime = System.currentTimeMillis();
-					System.out.println("time taken::" + (endtime - starttime) + " ::: " + args[1]);
+					System.out.println("time taken::" + (endtime - starttime));
 					//System.out.println("args::" + args[1]);
 
 				} else if (query instanceof Select) { // select queries
@@ -717,6 +717,7 @@ public class Main {
 			for (int i = 0; i < numAggFunc; i++) {
 				if (aggNo[i] == 5) {
 					if (!aggResults.containsKey(aggAlias[i])) {
+						//System.out.println("--count--");
 						aggResults.put(aggAlias[i], 1.0);
 					} else {
 						Double c = aggResults.get(aggAlias[i]);
