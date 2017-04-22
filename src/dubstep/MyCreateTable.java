@@ -10,6 +10,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.StringTokenizer;
 import java.util.Map.Entry;
 import java.util.TreeMap;
 
@@ -22,6 +23,7 @@ public class MyCreateTable {
 	public static Index primaryKey;
 	public static Index indexKey;
 	public static List<String> indexKeyList;
+	public static final String DELIM = "\\|";
 
 	public static void createTable() throws IOException {
 
@@ -84,6 +86,15 @@ public class MyCreateTable {
 			sortMyTable(Main.myTableName + "." + indexColumn, Main.primaryKeyList);
 		}
 	}
+	
+	private static String getNext(StringTokenizer st){  
+	    String value = st.nextToken();
+	    if (DELIM.equals(value))  
+	        value = null;  
+	    else if (st.hasMoreTokens())  
+	        st.nextToken();  
+	    return value;  
+	}
 
 	private static void makePrimaryMapping(List<String> primaryKeyList) throws FileNotFoundException {
 
@@ -103,14 +114,25 @@ public class MyCreateTable {
 		int idx = -1;
 		int idx1 = -1;
 		int idx2 = -1;
+		int i;
 		try {
 			
 			if (primaryKeyList.size() == 1) {
 				idx = Main.columnOrderMapping.get(primaryKeyList.get(0));
 				
 				while ((newRow = br.readLine()) != null) {
-					values = newRow.split("\\|", -1);
+
+					i = 0;
+					StringTokenizer st = new StringTokenizer(newRow, DELIM, true);
+					values = new String[Main.columnDataTypeMapping.size()];
+					while (st.hasMoreTokens()) {
+						values[i] = getNext(st);
+						i++;
+					}
+
+					// System.out.println("token::" + Arrays.toString(values));
 					Main.primaryKeyIndex.put(values[idx], newRow);
+
 				}
 				
 			}else{
@@ -176,11 +198,21 @@ public class MyCreateTable {
 		List<String> list = null;
 		int idx = -1;
 		int idpk = -1;
+		int i;
 		try {
 
 			while ((newRow = br.readLine()) != null) {
 				// System.out.println(newRow);
-				values = newRow.split("\\|", -1);
+				
+				i = 0;
+				StringTokenizer st = new StringTokenizer(newRow, DELIM, true);
+				values = new String[Main.columnDataTypeMapping.size()];
+				while (st.hasMoreTokens()) {
+					values[i] = getNext(st);
+					i++;
+				}
+				
+				//values = newRow.split("\\|", -1);
 				//System.out.println("colName::" + columnName);
 				idx = Main.columnOrderMapping.get(columnName);
 				String ptype = Main.columnDataTypeMapping.get(columnName);
@@ -257,10 +289,20 @@ public class MyCreateTable {
 		List<String> list = null;
 		int idx = -1;
 		int idpk = -1;
+		int i;
 		for (String rowString : PKList) {
 			// System.out.println(newRow);
 			newRow = Main.primaryKeyIndex.get(rowString);
-			values = newRow.split("\\|", -1);
+			
+			i = 0;
+			StringTokenizer st = new StringTokenizer(newRow, DELIM, true);
+			values = new String[Main.columnDataTypeMapping.size()];
+			while (st.hasMoreTokens()) {
+				values[i] = getNext(st);
+				i++;
+			}
+			
+			//values = newRow.split("\\|", -1);
 			idx = Main.columnOrderMapping.get(columnName);
 			String ptype = Main.columnDataTypeMapping.get(columnName);
 			Main.SQLDataType ptype1 = Main.SQLDataType.valueOf(ptype);

@@ -13,6 +13,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.StringTokenizer;
 import java.util.Map.Entry;
 import java.util.TreeMap;
 
@@ -424,6 +425,15 @@ public class Main {
 				printAggregateResult();
 		}
 	}
+	
+	private static String getNext(StringTokenizer st){  
+	    String value = st.nextToken();
+	    if ("\\|".equals(value))  
+	        value = null;  
+	    else if (st.hasMoreTokens())  
+	        st.nextToken();  
+	    return value;  
+	}
 
 	public static void processReadFromFile(PrimitiveValue ret) throws SQLException {
 
@@ -433,7 +443,16 @@ public class Main {
 
 		/* read line from csv file */
 		/* values array have individual column values from the file */
-		values = newRow.split("\\|", -1);
+		
+		int j = 0;
+		StringTokenizer st = new StringTokenizer(newRow, "\\|", true);
+		values = new String[Main.columnDataTypeMapping.size()];
+		while (st.hasMoreTokens()) {
+			values[j] = getNext(st);
+			j++;
+		}
+		
+		//values = newRow.split("\\|", -1);
 
 		/* where clause evaluation */
 		if (!(e == null)) {
