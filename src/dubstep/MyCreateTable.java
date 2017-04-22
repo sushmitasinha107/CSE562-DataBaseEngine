@@ -150,7 +150,14 @@ public class MyCreateTable {
 				
 				
 				while ((newRow = br.readLine()) != null) {
-					values = newRow.split("\\|", -1);
+					//values = newRow.split("\\|", -1);
+					i = 0;
+					StringTokenizer st = new StringTokenizer(newRow, DELIM, true);
+					values = new String[Main.columnDataTypeMapping.size()];
+				    while (st.hasMoreTokens()) {
+				    	values[i] = getNext(st);
+				    	i++;
+				    }
 					keyBuilder = values[idx1];
 					Main.primaryKeyIndex.put(Long.parseLong(keyBuilder.concat(values[idx2])), values);
 				}
