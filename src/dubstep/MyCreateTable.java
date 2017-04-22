@@ -111,6 +111,8 @@ public class MyCreateTable {
 		
 		BufferedReader br = new BufferedReader(new FileReader(file));
 		//String values[] = null;
+		
+		//System.out.println("size::" + Main.columnDataTypeMapping.size());
 		String[] values = new String[Main.columnDataTypeMapping.size()];
 		String newRow = "";
 		String keyBuilder = "";
@@ -154,8 +156,10 @@ public class MyCreateTable {
 					i = 0;
 					StringTokenizer st = new StringTokenizer(newRow, DELIM, true);
 					values = new String[Main.columnDataTypeMapping.size()];
-				    while (st.hasMoreTokens()) {
+				    while (st.hasMoreTokens() && i < Main.columnDataTypeMapping.size()) {
+				    	
 				    	values[i] = getNext(st);
+				    	//System.out.println(i + "\t" + values[i]);
 				    	i++;
 				    }
 					keyBuilder = values[idx1];
