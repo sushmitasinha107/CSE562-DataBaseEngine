@@ -1,4 +1,3 @@
-
 package dubstep;
 
 import java.io.BufferedReader;
@@ -6,14 +5,19 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.StringTokenizer;
 import java.util.Map.Entry;
+import java.util.StringTokenizer;
 import java.util.TreeMap;
 
+import net.sf.jsqlparser.expression.PrimitiveValue;
 import net.sf.jsqlparser.statement.create.table.ColumnDefinition;
 import net.sf.jsqlparser.statement.create.table.CreateTable;
 import net.sf.jsqlparser.statement.create.table.Index;
@@ -74,10 +78,6 @@ public class MyCreateTable {
 
 		makePrimaryMapping(Main.primaryKeyList);
 		
-		//System.out.println(Main.primaryKeyList);
-		
-		//indexKeyList.addAll(Main.primaryKeyList);
-		
 		for (String indexColumn : Main.primaryKeyList) {
 			sortMyTable(indexColumn, Main.primaryKeyList);
 		}
@@ -86,7 +86,7 @@ public class MyCreateTable {
 			sortMyTable(Main.myTableName + "." + indexColumn, Main.primaryKeyList);
 		}
 	}
-	
+
 	private static String getNext(StringTokenizer st){  
 	    String value = st.nextToken();
 	    if (DELIM.equals(value))  
@@ -95,8 +95,8 @@ public class MyCreateTable {
 	        st.nextToken();  
 	    return value;  
 	}
-
-	private static void makePrimaryMapping(List<String> primaryKeyList) throws FileNotFoundException {
+	    
+	private static void makePrimaryMapping(List<String> primaryKeyList) throws IOException {
 
 		File file;
 		if (System.getProperty("user.home").contains("deepti")) {
@@ -107,8 +107,11 @@ public class MyCreateTable {
 			file = new File("data/" + Main.myTableName + ".csv");
 		}
 
+		//List<String> lines = Files.readAllLines(Paths.get(Main.myTableName + ".csv"), StandardCharsets.UTF_8);
+		
 		BufferedReader br = new BufferedReader(new FileReader(file));
-		String values[] = null;
+		//String values[] = null;
+		String[] values = new String[Main.columnDataTypeMapping.size()];
 		String newRow = "";
 		String keyBuilder = "";
 		int idx = -1;
@@ -120,19 +123,25 @@ public class MyCreateTable {
 			if (primaryKeyList.size() == 1) {
 				idx = Main.columnOrderMapping.get(primaryKeyList.get(0));
 				
+//				for(String ip : lines){
+//					values = newRow.split("\\|", -1);
+//					Main.primaryKeyIndex.put(values[idx], newRow);
+//				}
+				
 				while ((newRow = br.readLine()) != null) {
-
+					
 					i = 0;
 					StringTokenizer st = new StringTokenizer(newRow, DELIM, true);
 					values = new String[Main.columnDataTypeMapping.size()];
-					while (st.hasMoreTokens()) {
-						values[i] = getNext(st);
-						i++;
-					}
+				    while (st.hasMoreTokens()) {
+				    	values[i] = getNext(st);
+				    	i++;
+				    }
 
-					// System.out.println("token::" + Arrays.toString(values));
-					Main.primaryKeyIndex.put(values[idx], newRow);
-
+				    //System.out.println("token::" + Arrays.toString(values));
+				    Main.primaryKeyIndex.put(Long.parseLong(values[idx]), values);
+				    
+				    
 				}
 				
 			}else{
@@ -143,36 +152,14 @@ public class MyCreateTable {
 				while ((newRow = br.readLine()) != null) {
 					values = newRow.split("\\|", -1);
 					keyBuilder = values[idx1];
-					Main.primaryKeyIndex.put(keyBuilder.concat(values[idx2]), newRow);
+					Main.primaryKeyIndex.put(Long.parseLong(keyBuilder.concat(values[idx2])), values);
 				}
 				
 			}
 			
 			
+			//System.out.println("pk::" + Main.primaryKeyIndex);
 			
-			
-			
-
-//			// keyBuilder = new StringBuilder();
-//			while ((newRow = br.readLine()) != null) {
-//
-//				values = newRow.split("\\|", -1);
-//				
-//
-//				if (primaryKeyList.size() != 0) {
-//					if (primaryKeyList.size() == 1) {
-//
-//						idx = Main.columnOrderMapping.get(primaryKeyList.get(0));
-//						Main.primaryKeyIndex.put(values[idx], newRow);
-//					} else {
-//						idx = Main.columnOrderMapping.get(primaryKeyList.get(0));
-//						keyBuilder = values[idx];
-//						idx = Main.columnOrderMapping.get(primaryKeyList.get(1));
-//						Main.primaryKeyIndex.put(keyBuilder.concat(values[idx]), newRow);
-//					}
-//				}
-//
-//			}
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -181,9 +168,10 @@ public class MyCreateTable {
 
 	public static void sortMyTable(String columnName, List<String> primaryKeyList) throws IOException {
 		Map map = new TreeMap<>();
-		String newRow = "";
+		Long newRow;
 		String keyBuilder = "";
 
+		/*
 		File file;
 		if (System.getProperty("user.home").contains("deepti")) {
 			System.out.println("local");
@@ -194,137 +182,110 @@ public class MyCreateTable {
 		}
 
 		BufferedReader br = new BufferedReader(new FileReader(file));
+		*/
+		
 		String values[] = null;
-		List<String> list = null;
+		List<Long> list = null;
 		int idx = -1;
 		int idpk = -1;
-		int i;
-		try {
+		Iterator<Entry<Long, String[]>> it = Main.primaryKeyIndex.entrySet().iterator();
+		//System.out.println("pkl::" + Main.primaryKeyIndex.entrySet());
+		
+		
+		
+		idx = Main.columnOrderMapping.get(columnName);
+		String ptype = Main.columnDataTypeMapping.get(columnName);
+		Main.SQLDataType ptype1 = Main.SQLDataType.valueOf(ptype);
+		
+		while (it.hasNext()) {
+			
+			Entry<Long, String[]> e = it.next();
+			values = e.getValue();
+			newRow = e.getKey();
+			
 
-			while ((newRow = br.readLine()) != null) {
-				// System.out.println(newRow);
-				
-				i = 0;
-				StringTokenizer st = new StringTokenizer(newRow, DELIM, true);
-				values = new String[Main.columnDataTypeMapping.size()];
-				while (st.hasMoreTokens()) {
-					values[i] = getNext(st);
-					i++;
-				}
-				
-				//values = newRow.split("\\|", -1);
-				//System.out.println("colName::" + columnName);
-				idx = Main.columnOrderMapping.get(columnName);
-				String ptype = Main.columnDataTypeMapping.get(columnName);
-				Main.SQLDataType ptype1 = Main.SQLDataType.valueOf(ptype);
+			if (ptype1 == Main.SQLDataType.sqlint) {
 
-				if (primaryKeyList.size() == 1) {
-
-					idpk = Main.columnOrderMapping.get(primaryKeyList.get(0));
-					newRow = values[idpk];
+				int key = Integer.parseInt(values[idx]);
+				if (map.containsKey(key)) {
+					list = (List<Long>) map.get(key);
+					list.add(newRow);
+					map.put(key, list);
 				} else {
-					idpk = Main.columnOrderMapping.get(primaryKeyList.get(0));
-					keyBuilder = values[idpk];
-					idpk = Main.columnOrderMapping.get(primaryKeyList.get(1));
-					newRow = keyBuilder.concat(values[idpk]);
+					list = new ArrayList<Long>();
+					list.add(newRow);
+					map.put(key, list);
 				}
 
-				if (ptype1 == Main.SQLDataType.sqlint) {
-
-					int key = Integer.parseInt(values[idx]);
-					if (map.containsKey(key)) {
-						list = (List<String>) map.get(key);
-						list.add(newRow);
-						map.put(key, list);
-					} else {
-						list = new ArrayList<String>();
-						list.add(newRow);
-						map.put(key, list);
-					}
-
-				} else if (ptype1 == Main.SQLDataType.DECIMAL || ptype1 == Main.SQLDataType.decimal) {
-					Double key = Double.parseDouble(values[idx]);
-					if (map.containsKey(key)) {
-						list = (List<String>) map.get(key);
-						list.add(newRow);
-						map.put(key, list);
-					} else {
-						list = new ArrayList<String>();
-
-						list.add(newRow);
-						map.put(key, list);
-					}
+			} else if (ptype1 == Main.SQLDataType.DECIMAL || ptype1 == Main.SQLDataType.decimal) {
+				Double key = Double.parseDouble(values[idx]);
+				if (map.containsKey(key)) {
+					list = (List<Long>) map.get(key);
+					list.add(newRow);
+					map.put(key, list);
 				} else {
-					// (ptype1 == Main.SQLDataType.string)
+					list = new ArrayList<Long>();
 
-					String key = values[idx];
-					if (map.containsKey(key)) {
-						list = (List<String>) map.get(key);
-						list.add(newRow);
-						map.put(key, list);
-					} else {
-						list = new ArrayList<String>();
-						list.add(newRow);
-						map.put(key, list);
-					}
+					list.add(newRow);
+					map.put(key, list);
 				}
+			} else {
+				// (ptype1 == Main.SQLDataType.string)
 
+				String key = values[idx];
+				if (map.containsKey(key)) {
+					list = (List<Long>) map.get(key);
+					list.add(newRow);
+					map.put(key, list);
+				} else {
+					list = new ArrayList<Long>();
+					list.add(newRow);
+					map.put(key, list);
+				}
 			}
-			Main.columnIndex.put(columnName, map);
 
-		} catch (FileNotFoundException e) {
-			e.printStackTrace();
 		}
+		Main.columnIndex.put(columnName, map);
+		
+		//System.out.println("colIdx:" + Main.columnIndex);
 
 	}
 
-	public static List<String> sortOnIndex2(String columnName, List<String> PKList) throws IOException {
+	public static List<Long> sortOnIndex2(String columnName, List<Long> PKList) throws IOException {
 
-		List<String> PKListSorted = new ArrayList<>();
+		List<Long> PKListSorted = new ArrayList<>();
 
-		String newRow = "";
-		String keyBuilder = "";
 		Map map = new TreeMap<>();
 		String values[] = null;
-		List<String> list = null;
+		List<Long> list = null;
 		int idx = -1;
-		int idpk = -1;
-		int i;
-		for (String rowString : PKList) {
-			// System.out.println(newRow);
-			newRow = Main.primaryKeyIndex.get(rowString);
-			
-			i = 0;
-			StringTokenizer st = new StringTokenizer(newRow, DELIM, true);
-			values = new String[Main.columnDataTypeMapping.size()];
-			while (st.hasMoreTokens()) {
-				values[i] = getNext(st);
-				i++;
-			}
-			
-			//values = newRow.split("\\|", -1);
+		
+		for (Long rowString : PKList) {
+
+			values = Main.primaryKeyIndex.get(rowString);
 			idx = Main.columnOrderMapping.get(columnName);
 			String ptype = Main.columnDataTypeMapping.get(columnName);
 			Main.SQLDataType ptype1 = Main.SQLDataType.valueOf(ptype);
+			
 			if (ptype1 == Main.SQLDataType.sqlint) {
 				int key = Integer.parseInt(values[idx]);
 				if (map.containsKey(key)) {
-					list = (List<String>) map.get(key);
+					list = (List<Long>) map.get(key);
 					list.add(rowString);
 					map.put(key, list);
 				} else {
-					list = new ArrayList<String>();
+					list = new ArrayList<Long>();
 					list.add(rowString);
 					map.put(key, list);
 				}
 			} else if (ptype1 == Main.SQLDataType.DECIMAL || ptype1 == Main.SQLDataType.decimal) {
 				Double key = Double.parseDouble(values[idx]);
 				if (map.containsKey(key)) {
-					list = (List<String>) map.get(key);
+					list = (List<Long>) map.get(key);
 					list.add(rowString);
 					map.put(key, list);
 				} else {
-					list = new ArrayList<String>();
+					list = new ArrayList<Long>();
 
 					list.add(rowString);
 					map.put(key, list);
@@ -332,11 +293,11 @@ public class MyCreateTable {
 			} else {
 				String key = values[idx];
 				if (map.containsKey(key)) {
-					list = (List<String>) map.get(key);
+					list = (List<Long>) map.get(key);
 					list.add(rowString);
 					map.put(key, list);
 				} else {
-					list = new ArrayList<String>();
+					list = new ArrayList<Long>();
 					
 					
 					list.add(rowString);
@@ -347,7 +308,7 @@ public class MyCreateTable {
 		Iterator iterator = map.entrySet().iterator();
 		while (iterator.hasNext()) {
 			Map.Entry entry = (Entry) iterator.next();
-			for (String rowS : (ArrayList<String>) entry.getValue()) {
+			for (Long rowS : (ArrayList<Long>) entry.getValue()) {
 				PKListSorted.add(rowS);
 			}
 		}

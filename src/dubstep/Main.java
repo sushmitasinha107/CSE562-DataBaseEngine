@@ -1,5 +1,5 @@
-
 package dubstep;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -9,13 +9,15 @@ import java.io.InputStreamReader;
 import java.io.StringReader;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.StringTokenizer;
 import java.util.Map.Entry;
 import java.util.TreeMap;
+
+import org.omg.CORBA.INTERNAL;
 
 import net.sf.jsqlparser.eval.Eval;
 import net.sf.jsqlparser.expression.DateValue;
@@ -36,6 +38,7 @@ import net.sf.jsqlparser.schema.Table;
 import net.sf.jsqlparser.statement.Statement;
 import net.sf.jsqlparser.statement.create.table.ColumnDefinition;
 import net.sf.jsqlparser.statement.create.table.CreateTable;
+import net.sf.jsqlparser.statement.select.AllColumns;
 import net.sf.jsqlparser.statement.select.FromItem;
 import net.sf.jsqlparser.statement.select.OrderByElement;
 import net.sf.jsqlparser.statement.select.PlainSelect;
@@ -125,14 +128,16 @@ public class Main {
 	public static long limit = 0;
 	public static long count = 0;
 
-	public static Map<String, String> primaryKeyIndex = new HashMap<String, String>();
+	public static Map<Long, String[]> primaryKeyIndex = new HashMap<Long, String[]>();
 	public static List<String> primaryKeyList = new ArrayList<>();
 
 	public static List<String> orderByElementsList = new ArrayList<String>();
 	public static Map<String, Integer> orderByElementsSortOrder = new HashMap<>();
-	
-	public static boolean isDone = false;
+	public static String alias;
+	public static boolean line = false;
 
+	public static boolean isDone = false;
+	
 	public static int getAggNo(AggFunctions aggName) {
 		if (aggName == AggFunctions.SUM || aggName == AggFunctions.sum) {
 			return 1;
@@ -173,21 +178,30 @@ public class Main {
 		 */
 		while ((inputString = br.readLine()) != null) {
 
+			inputString = inputString.toUpperCase();
 			input = new StringReader(inputString);
 			parser = new CCJSqlParser(input);
 
 			try {
 				query = parser.Statement();
-
+				long starttime = System.currentTimeMillis();
 				// create table query
 				if (query instanceof CreateTable) {
 
 					ct = new MyCreateTable();
 					ct.createTable();
 
+					long endtime = System.currentTimeMillis();
+					System.out.println("time taken::" + (endtime - starttime));
+
 				} else if (query instanceof Select) { // select queries
 
 					reinitializeValues();
+					
+					count = 0;
+					limit = -1;
+					isDone = false;
+					
 					innerSelects = new ArrayList<>(); // stores nested select
 														// statements
 					pq = new ProcessQueries();
@@ -202,8 +216,7 @@ public class Main {
 
 					// System.out.println("gb::" + groupByElementsList);
 
-					limit = -1;
-					count = 0;
+					
 
 					if (plainSelect.getOrderByElements() != null) {
 						orderByElementsList = new ArrayList<String>();
@@ -240,10 +253,9 @@ public class Main {
 						outermost = true;
 						pq.processInnermostSelect(myTableName);
 					} else {
-						String alias = fromItem.getAlias();
+						alias = fromItem.getAlias();
 
-						if (!alias.equals("") || alias != null) {
-
+						if (alias != null) {
 							HashMap<String, String> tempMap = new HashMap<>();
 							// tableName.columnName -->> alias.columnName
 
@@ -253,7 +265,7 @@ public class Main {
 								key = key.replace(myTableName, alias);
 								tempMap.put(key, value);
 							}
-							
+
 							HashMap<String, Integer> tempMap2 = new HashMap<>();
 
 							for (Entry<String, Integer> c : columnOrderMapping.entrySet()) {
@@ -278,12 +290,13 @@ public class Main {
 							tableMapping.put(alias, td);
 
 							pq.populateInnerSelectStatements((SubSelect) plainSelect.getFromItem());
+
 							pq.processInnermostSelect(alias);
+
 						} else {
 							pq.populateInnerSelectStatements((SubSelect) plainSelect.getFromItem());
 							pq.processInnermostSelect(myTableName);
 						}
-
 					}
 
 				} else {
@@ -309,6 +322,7 @@ public class Main {
 		aggGroupByMap = new HashMap<>();
 
 		orderOperator = false;
+		
 	}
 
 	public static void readFromFile() throws SQLException, IOException {
@@ -339,6 +353,7 @@ public class Main {
 
 				while ((newRow = br.readLine()) != null) {
 
+					line = true;
 					processReadFromFile(ret);
 				}
 
@@ -355,6 +370,7 @@ public class Main {
 			}
 
 		} else {// order by present, read from the maps created
+			line = false;
 			e = plainSelect.getWhere();
 			reinitializeValues();
 			PrimitiveValue ret = null;
@@ -386,8 +402,10 @@ public class Main {
 				
 				Map.Entry entry = (Entry) iterator.next();
 
+				// System.out.println("--" + entry);
+
 				// if multiple rows have same index value(clustered)
-				List<String> toOrderByElement2 = (ArrayList<String>) entry.getValue();
+				List<Long> toOrderByElement2 = (List<Long>) entry.getValue();
 
 				if (toOrderByElement2.size() > 1 && orderByElementsList.size() > 1) {
 					// 2 order by column criteria, then sort the cluster based
@@ -397,42 +415,32 @@ public class Main {
 					// print cluster in rev when desc(desc = 2)
 					if (orderByElementsSortOrder.get(orderByElementsList.get(1)) == 2) {
 						for (int i = toOrderByElement2.size() - 1; i >= 0; i--) {
-							newRow = primaryKeyIndex.get(toOrderByElement2.get(i));
+							values = primaryKeyIndex.get(toOrderByElement2.get(i));
 							processReadFromFile(ret);
 						}
 
 					} else {
-						for (String rowString : toOrderByElement2) {
+						for (Long rowString : toOrderByElement2) {
 							// read new row from (PK,entire row ) map
-							newRow = primaryKeyIndex.get(rowString);
+							values = primaryKeyIndex.get(rowString);
 							processReadFromFile(ret);
 						}
 					}
 				} else {
 
 					// clustered index
-					for (String rowString : toOrderByElement2) {
+					for (Long rowString : toOrderByElement2) {
 						// read new row from (PK,entire row ) map
-						newRow = primaryKeyIndex.get(rowString);
+						values = primaryKeyIndex.get(rowString);
 						processReadFromFile(ret);
 					}
 				}
 
 			}
-			
 
 			if (numAggFunc > 0)
 				printAggregateResult();
 		}
-	}
-	
-	private static String getNext(StringTokenizer st){  
-	    String value = st.nextToken();
-	    if ("\\|".equals(value))  
-	        value = null;  
-	    else if (st.hasMoreTokens())  
-	        st.nextToken();  
-	    return value;  
 	}
 
 	public static void processReadFromFile(PrimitiveValue ret) throws SQLException {
@@ -443,16 +451,9 @@ public class Main {
 
 		/* read line from csv file */
 		/* values array have individual column values from the file */
-		
-		int j = 0;
-		StringTokenizer st = new StringTokenizer(newRow, "\\|", true);
-		values = new String[Main.columnDataTypeMapping.size()];
-		while (st.hasMoreTokens()) {
-			values[j] = getNext(st);
-			j++;
+		if (line) {
+			values = newRow.split("\\|", -1);
 		}
-		
-		//values = newRow.split("\\|", -1);
 
 		/* where clause evaluation */
 		if (!(e == null)) {
@@ -465,7 +466,7 @@ public class Main {
 				}
 			} else {
 				newRow = ""; // making this "" as it shouldn't be passed on to
-								// outer selects
+				values = null; // outer selects
 			}
 		} else {
 			if (numAggFunc > 0) {
@@ -480,13 +481,13 @@ public class Main {
 		 * statements
 		 */
 		if (!outermost) {
-			if (!newRow.equals("")) {
+			if (values != null) {
 
 				/*
 				 * innerSelects has a list of all the inner/nested select
 				 * statements NOT the outermost/main select statement
 				 */
-				for (int i = innerSelects.size() - 2; i >= 0 && !newRow.equals(""); i--) {
+				for (int i = innerSelects.size() - 2; i >= 0 && (values != null); i--) {
 
 					reinitializeValues();
 					pq.processInBetweenSelect(innerSelects.get(i).toString());
@@ -495,7 +496,7 @@ public class Main {
 				/*
 				 * row is returned till the end
 				 */
-				if (!newRow.equals("")) {
+				if (values != null) {
 					outermost = true;
 
 					// reinitializeValues();
@@ -776,8 +777,16 @@ public class Main {
 
 		if (selectStar == true) {
 			if (outermost && ((limit >= 1 && count < limit) || limit == -1)) {
-				if (!newRow.equals("")) {
-					System.out.println(newRow);
+				if (values != null) {
+					StringBuilder sb = new StringBuilder();
+					for(int i = 0; i < values.length; i++){
+						sb.append(values[i]);
+						sb.append("|");
+					}
+					if (sb.length() > 0)
+						sb.setLength(sb.length() - 1);
+
+					System.out.println(sb);
 					count++;
 				}
 				if (innerSelects.size() != 0) {
@@ -785,8 +794,7 @@ public class Main {
 				}
 
 			}
-			//System.out.println("count and limit:: " + count + " : " + limit);
-			if(count >= limit){
+			if(count >= limit && limit != -1){
 				//System.out.println("------------");
 				isDone = true;
 			}
@@ -820,16 +828,20 @@ public class Main {
 			}
 
 			if (outermost && ((limit >= 1 && count < limit) || limit == -1)) {
-				if (!newRow.equals("")) {
-					System.out.println(sbuilder.toString());
-					count++;
-				}
+				// if (!newRow.equals("")) {
+				System.out.println(sbuilder.toString());
+				count++;
+				// }
 				if (innerSelects.size() != 0) {
 					outermost = false;
 				}
 
 			} else {
 				newRow = sbuilder.toString();
+			}
+			if(count >= limit && limit != -1){
+				//System.out.println("------------");
+				isDone = true;
 			}
 			// System.out.println("new row: " + newRow);
 		}
@@ -839,7 +851,17 @@ public class Main {
 	public static Eval eval = new Eval() {
 		public PrimitiveValue eval(Column c) {
 
-			// System.out.println("-eval-" + c);
+			if (c.toString().contains(myTableName)) {
+				Main.tableData = Main.tableMapping.get(myTableName);
+
+				Main.columnOrderMapping = Main.tableData.getColumnOrderMapping();
+				Main.columnDataTypeMapping = Main.tableData.getColumnDataTypeMapping();
+			} else {
+				Main.tableData = Main.tableMapping.get(alias);
+
+				Main.columnOrderMapping = Main.tableData.getColumnOrderMapping();
+				Main.columnDataTypeMapping = Main.tableData.getColumnDataTypeMapping();
+			}
 
 			int idx = columnOrderMapping.get(c.toString());
 			String ptype = columnDataTypeMapping.get(c.toString());

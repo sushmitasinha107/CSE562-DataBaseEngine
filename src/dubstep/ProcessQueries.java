@@ -1,4 +1,5 @@
 package dubstep;
+
 import java.io.IOException;
 import java.io.StringReader;
 import java.sql.SQLException;
@@ -88,6 +89,7 @@ public class ProcessQueries {
 				}
 			}else{
 				Main.newRow = "";
+				Main.values = null;
 			}
 		} else {
 			if (Main.numAggFunc > 0) {
