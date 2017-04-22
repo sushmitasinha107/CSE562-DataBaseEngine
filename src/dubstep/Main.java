@@ -181,10 +181,10 @@ public class Main {
 		String phase = args[1];
 		if (phase.equals("--in-mem")) {
 			inmem = true;
-			System.out.println("inmem");
+			//System.out.println("inmem");
 		} else {
 			inmem = false;
-			System.out.println("ondisk");
+			//System.out.println("ondisk");
 		}
 
 
