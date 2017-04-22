@@ -152,7 +152,8 @@ public class Main {
 
 		if (ptype == SQLDataType.sqlint) {
 			return new LongValue(value);
-		} else if (ptype == SQLDataType.varchar || ptype == SQLDataType.sqlchar || ptype == SQLDataType.string || ptype == SQLDataType.VARCHAR || ptype == SQLDataType.STRING) {
+		} else if (ptype == SQLDataType.varchar || ptype == SQLDataType.sqlchar || ptype == SQLDataType.string
+				|| ptype == SQLDataType.VARCHAR || ptype == SQLDataType.STRING) {
 			return new StringValue(value);
 		} else if (ptype == SQLDataType.DATE || ptype == SQLDataType.date) {
 			return new DateValue(value);
@@ -165,7 +166,7 @@ public class Main {
 
 	public static void main(String[] args) throws ParseException, SQLException, IOException {
 
-		System.out.println("args::" + args[1]);
+		// System.out.println("args::" + args[1]);
 		System.out.print("$>");
 		BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
 
@@ -189,6 +190,7 @@ public class Main {
 
 					long endtime = System.currentTimeMillis();
 					System.out.println("time taken::" + (endtime - starttime));
+					System.out.println("args::" + args[1]);
 
 				} else if (query instanceof Select) { // select queries
 
@@ -509,14 +511,17 @@ public class Main {
 		if (groupByElementsList == null) {
 
 			for (int i = 0; i < aggAlias.length; i++) {
-				sb.append(aggResults.get(aggAlias[i]));
-				sb.append('|');
+				if (aggResults.get(aggAlias[i]) != null) {
+					sb.append(aggResults.get(aggAlias[i]));
+					sb.append('|');
+				}
 			}
 
-			if (sb.length() > 0)
+			if (sb.length() > 0) {
 				sb.setLength(sb.length() - 1);
 
-			System.out.println(sb);
+				System.out.println(sb);
+			}
 		} else {
 
 			List<String> tempList = new ArrayList<String>();
@@ -817,11 +822,15 @@ public class Main {
 					};
 
 					result = eval.eval(selExp);
-					sbuilder.append(result);
+					if (result != null) {
+						sbuilder.append(result);
+					}
 
 				} else {
 					int idx = columnOrderMapping.get(sitem.toString());
-					sbuilder.append(values[idx]);
+					if (values[idx] != null) {
+						sbuilder.append(values[idx]);
+					}
 				}
 
 				if (i != selCols - 1)
@@ -829,10 +838,10 @@ public class Main {
 			}
 
 			if (outermost && ((limit >= 1 && count < limit) || limit == -1)) {
-				// if (!newRow.equals("")) {
-				System.out.println(sbuilder.toString());
-				count++;
-				// }
+				if (values != null) {
+					System.out.println(sbuilder.toString());
+					count++;
+				}
 				if (innerSelects.size() != 0) {
 					outermost = false;
 				}
