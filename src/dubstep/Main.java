@@ -9,6 +9,8 @@ import java.io.InputStreamReader;
 import java.io.StringReader;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -130,7 +132,10 @@ public class Main {
 	public static Map<Long, String[]> primaryKeyIndex = new HashMap<Long, String[]>();
 	public static Map<Long, String> primaryKeyIndexOD = new HashMap<Long, String>();
 	
+	
 	public static List<String> primaryKeyList = new ArrayList<>();
+	
+	public static List<String> outputDataOD = new ArrayList<>();
 
 	public static List<String> orderByElementsList = new ArrayList<String>();
 	public static Map<String, Integer> orderByElementsSortOrder = new HashMap<>();
@@ -223,8 +228,9 @@ public class Main {
 
 				} else if (query instanceof Select) { // select queries
 
+					outputDataOD = new ArrayList<String>();
 					reinitializeValues();
-
+					orderOperator = false;
 					count = 0;
 					limit = -1;
 					isDone = false;
@@ -240,8 +246,6 @@ public class Main {
 
 					// orderByElementsList = plainSelect.getOrderByElements();
 					groupByElementsList = plainSelect.getGroupByColumnReferences();
-
-					// System.out.println("gb::" + groupByElementsList);
 
 					if (plainSelect.getOrderByElements() != null) {
 						orderByElementsList = new ArrayList<String>();
@@ -262,12 +266,15 @@ public class Main {
 												 * tells us from where to read
 												 * the data::file or map
 												 */
+					
+					
+						
 					}
 
 					if (plainSelect.getLimit() != null) {
 						limit = plainSelect.getLimit().getRowCount();
 					}
-					// System.out.println("limit: " + limit);
+					
 
 					/*
 					 * check if there are inner select statements
@@ -324,13 +331,53 @@ public class Main {
 						}
 					}
 
+					if(inmem==false && orderOperator==true){	
+						TreeMap<String,List<String>> outputDataODMap = new TreeMap<>();
+						List<String> list = new ArrayList<String>();
+						for(String rowVal: outputDataOD ){
+							String opVal[] = rowVal.split("\\|");
+						
+							if (outputDataODMap.containsKey(opVal[0])) {
+								list = (List<String>) outputDataODMap.get(opVal[0]);
+								list.add(rowVal);
+								Collections.sort(list, new Comparator<String>() {
+									public int compare(String a1, String a2) {
+										String a1Arr[] = a1.split("\\|");
+										String a2Arr[] = a2.split("\\|");
+										return a1Arr[1].compareTo(a2Arr[1]);
+									}
+								});
+								outputDataODMap.put(opVal[0], list);
+							} else {
+								list = new ArrayList<String>();
+								list.add(rowVal);
+								outputDataODMap.put(opVal[0], list);
+							}
+						}
+						
+						Iterator iterator = outputDataODMap.entrySet().iterator();
+
+						while (iterator.hasNext()) {
+							Map.Entry entry = (Entry) iterator.next();
+							for (String rowString : (ArrayList<String>) entry.getValue()) {
+								System.out.println(rowString);
+							}
+							
+						}
+					}
+					
 				} else {
 					// System.out.println("Not of type select");
 				}
 			} catch (ParseException e) {
 				e.printStackTrace();
 			}
+			
+			
+			
 			System.out.print("$>");
+			
+			
 		}
 
 	}
@@ -344,7 +391,7 @@ public class Main {
 		aggGroupByMap = new HashMap<>();
 		aggResults = new HashMap<>();
 
-		orderOperator = false;
+		
 
 	}
 
@@ -473,8 +520,11 @@ public class Main {
 			//-----------inmem end-----
 			}
 			else{
-				//-----------ondisk start-----
 				
+				
+				
+				//-----------ondisk start-----
+				/*
 				File file;
 				String firstOp = "";
 				if (Main.orderByElementsSortOrder.get(firstOrderOperator) == 1)
@@ -526,6 +576,18 @@ public class Main {
 				} else {
 
 				file = new File("data/" + Main.myTableName + ".csv");
+				}
+
+
+				*/
+				
+				File file;
+				if (System.getProperty("user.home").contains("deepti")||System.getProperty("user.home").contains("sushmitasinha")) {
+					System.out.println("local");
+					file = new File(myTableName + ".csv");
+				} else {
+
+					file = new File("data/" + myTableName + ".csv");
 				}
 
 				BufferedReader br = new BufferedReader(new FileReader(file));
@@ -637,6 +699,7 @@ public class Main {
 		StringBuilder sb = new StringBuilder();
 		if (groupByElementsList == null) {
 
+
             for (int i = 0; i < aggAlias.length; i++) {
                 if (aggResults.get(aggAlias[i]) != null) {
                     sb.append(aggResults.get(aggAlias[i]));
@@ -651,9 +714,22 @@ public class Main {
             if (sb.length() > 0) {
                 sb.setLength(sb.length() - 1);
                 
-                System.out.println(sb);
+               if(inmem){
+				System.out.println(sb);
+				}
+				
+				//put in map if ondisk & order operator present
+				
+				
+				if(inmem==false && orderOperator==true){
+					outputDataOD.add(sb.toString());
+				}
+				else{
+					System.out.println(sb.toString());
+				}
             }
             
+
 		} else {
 
 			List<String> tempList = new ArrayList<String>();
@@ -716,7 +792,21 @@ public class Main {
 
 				if (sb.length() > 0)
 					sb.setLength(sb.length() - 1);
-				System.out.println(sb);
+				//System.out.println(sb);
+				
+				if(inmem){
+					System.out.println(sb);
+					}
+					
+					//put in map if ondisk & order operator present
+					
+					
+					if(inmem==false && orderOperator==true){
+						outputDataOD.add(sb.toString());
+					}
+					else{
+						System.out.println(sb.toString());
+					}
 			}
 
 		}
@@ -982,7 +1072,20 @@ public class Main {
 					if (sb.length() > 0)
 						sb.setLength(sb.length() - 1);
 
+					if(inmem){
 					System.out.println(sb);
+					}
+					
+					//put in map if ondisk & order operator present
+					
+					
+					
+					if(inmem==false && orderOperator==true){
+						outputDataOD.add(sb.toString());
+					}
+					else{
+						System.out.println(sb.toString());
+					}
 					count++;
 				}
 				if (innerSelects.size() != 0) {
@@ -1024,10 +1127,21 @@ public class Main {
 			}
 
 			if (outermost && ((limit >= 1 && count < limit) || limit == -1)) {
-				// if (!newRow.equals("")) {
-				System.out.println(sbuilder.toString());
-				count++;
-				// }
+				
+				if(inmem){
+					System.out.println(sbuilder.toString());
+					}
+					
+					//put in map if ondisk & order operator present
+					if(!inmem && orderOperator){
+						outputDataOD.add(sbuilder.toString());
+					}
+					else{
+						System.out.println(sbuilder.toString());
+					}
+					count++;
+				
+				
 				if (innerSelects.size() != 0) {
 					outermost = false;
 				}
