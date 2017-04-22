@@ -198,7 +198,7 @@ public class Main {
 			inputStringBuilder.append(inputString);
 			
 			while(inputString.contains(";")==false && (inputString=  br.readLine()) != null){
-				
+				inputStringBuilder.append(" ");
 				inputStringBuilder.append(inputString);
 				inputString = inputStringBuilder.toString();
 			}
