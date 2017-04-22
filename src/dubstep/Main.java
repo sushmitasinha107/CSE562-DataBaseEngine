@@ -69,8 +69,6 @@ public class Main {
 	public static Map<String, Double[]> aggGroupByMap = new HashMap<String, Double[]>();
 	public static List<String> columnIndexOnDisk = new ArrayList<String>();
 	
-	
-	
 	public static List<Column> groupByElementsList = new ArrayList<Column>();
 
 	public static boolean orderOperator = false;
@@ -163,9 +161,8 @@ public class Main {
 
 		if (ptype == SQLDataType.sqlint) {
 			return new LongValue(value);
-		} else if (ptype == SQLDataType.varchar || ptype == SQLDataType.sqlchar || ptype == SQLDataType.string
-				|| ptype == SQLDataType.VARCHAR || ptype == SQLDataType.STRING) {
-			return new StringValue(value.toUpperCase());
+		} else if (ptype == SQLDataType.varchar || ptype == SQLDataType.sqlchar || ptype == SQLDataType.string || ptype == SQLDataType.VARCHAR || ptype == SQLDataType.STRING) {
+			return new StringValue(value);
 		} else if (ptype == SQLDataType.DATE || ptype == SQLDataType.date) {
 			return new DateValue(value);
 		} else if (ptype == SQLDataType.DECIMAL || ptype == SQLDataType.decimal) {
@@ -177,7 +174,6 @@ public class Main {
 
 	public static void main(String[] args) throws ParseException, SQLException, IOException {
 
-
 		String phase = args[1];
 		if (phase.equals("--in-mem")) {
 			inmem = true;
@@ -187,16 +183,26 @@ public class Main {
 			//System.out.println("ondisk");
 		}
 
-
 		System.out.print("$>");
 		BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
 
+	//	StringBuilder inputStringBuilder = new StringBuilder();
 		/*
 		 * keep reading from the grader
 		 */
 		while ((inputString = br.readLine()) != null) {
 
 			inputString = inputString.toUpperCase();
+
+			StringBuilder inputStringBuilder = new StringBuilder();
+			inputStringBuilder.append(inputString);
+			
+			while(inputString.contains(";")==false && (inputString=  br.readLine()) != null){
+				
+				inputStringBuilder.append(inputString);
+				inputString = inputStringBuilder.toString();
+			}
+			
 			input = new StringReader(inputString);
 			parser = new CCJSqlParser(input);
 
@@ -211,7 +217,6 @@ public class Main {
 
 					long endtime = System.currentTimeMillis();
 					System.out.println("time taken::" + (endtime - starttime));
-					//System.out.println("args::" + args[1]);
 
 				} else if (query instanceof Select) { // select queries
 
@@ -621,21 +626,14 @@ public class Main {
 		if (groupByElementsList == null) {
 
 			for (int i = 0; i < aggAlias.length; i++) {
-				if (aggResults.get(aggAlias[i]) != null) {
-					sb.append(aggResults.get(aggAlias[i]));
-					sb.append('|');
-				}
-				if(aggNo[i] == 5 && aggResults.get(aggAlias[i]) == null){
-					sb.append(0);
-					sb.append('|');
-				}
+				sb.append(aggResults.get(aggAlias[i]));
+				sb.append('|');
 			}
 
-			if (sb.length() > 0) {
+			if (sb.length() > 0)
 				sb.setLength(sb.length() - 1);
 
-				System.out.println(sb);
-			}
+			System.out.println(sb);
 		} else {
 
 			List<String> tempList = new ArrayList<String>();
@@ -831,7 +829,6 @@ public class Main {
 			for (int i = 0; i < numAggFunc; i++) {
 				if (aggNo[i] == 5) {
 					if (!aggResults.containsKey(aggAlias[i])) {
-						//System.out.println("--count--");
 						aggResults.put(aggAlias[i], 1.0);
 					} else {
 						Double c = aggResults.get(aggAlias[i]);
@@ -937,15 +934,11 @@ public class Main {
 					};
 
 					result = eval.eval(selExp);
-					if (result != null) {
-						sbuilder.append(result);
-					}
+					sbuilder.append(result);
 
 				} else {
 					int idx = columnOrderMapping.get(sitem.toString());
-					if (values[idx] != null) {
-						sbuilder.append(values[idx]);
-					}
+					sbuilder.append(values[idx]);
 				}
 
 				if (i != selCols - 1)
@@ -953,10 +946,10 @@ public class Main {
 			}
 
 			if (outermost && ((limit >= 1 && count < limit) || limit == -1)) {
-				if (values != null) {
-					System.out.println(sbuilder.toString());
-					count++;
-				}
+				// if (!newRow.equals("")) {
+				System.out.println(sbuilder.toString());
+				count++;
+				// }
 				if (innerSelects.size() != 0) {
 					outermost = false;
 				}
