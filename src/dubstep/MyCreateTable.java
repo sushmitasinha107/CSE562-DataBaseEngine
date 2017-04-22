@@ -77,17 +77,20 @@ public class MyCreateTable {
 			}
 		}
 
-		if(Main.inmem)
-			makePrimaryMapping(Main.primaryKeyList);
+
 		if(Main.inmem){
+			makePrimaryMapping(Main.primaryKeyList);
+
+            makePrimaryMapping(Main.primaryKeyList);
 		for (String indexColumn : Main.primaryKeyList) {
 			sortMyTable(indexColumn, Main.primaryKeyList, "create");
-		}}
+		}
 		
 		for (String indexColumn : indexKeyList) {
 			sortMyTable(Main.myTableName + "." + indexColumn, Main.primaryKeyList, "create");
 		}
-		
+	}
+		/*
 		
 		if (!Main.inmem) {
 			if(Main.myTableName.equals("LINEITEM")){
@@ -97,7 +100,7 @@ public class MyCreateTable {
 				
 			}
 			
-		}
+		}*/
 	}
 
 	private static String getNext(StringTokenizer st){  

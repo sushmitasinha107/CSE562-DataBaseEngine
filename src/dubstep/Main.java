@@ -66,7 +66,8 @@ public class Main {
 	public static Map<String, Integer> columnOrderMapping = new HashMap<String, Integer>();
 	public static Map<String, String> columnDataTypeMapping = new HashMap<String, String>();
 	public static Map<String, Map> columnIndex = new HashMap<String, Map>();
-	public static Map<String, Double[]> aggGroupByMap = new HashMap<String, Double[]>();
+	public static Map<String, HashMap<String, Double>> aggGroupByMap = new HashMap<String, HashMap<String, Double>>();
+
 	public static List<String> columnIndexOnDisk = new ArrayList<String>();
 	
 	public static List<Column> groupByElementsList = new ArrayList<Column>();
@@ -87,6 +88,8 @@ public class Main {
 	public static String[] values = null;
 	public static boolean selectStar = false;
 	public static StringReader input = null;
+
+	public static String countAlias;
 
 	public static CCJSqlParser parser = null;
 	public static Statement query = null;
@@ -502,6 +505,7 @@ public class Main {
 				} else {
 					// if index not built on order by column, build it on the
 					// fly
+                    
 					MyCreateTable.sortMyTable(firstOrderOperator, tableData.getPrimaryKeyList(), "select");
 					if (System.getProperty("user.home").contains("deepti")
 							|| System.getProperty("user.home").contains("sushmitasinha")) {
@@ -514,6 +518,14 @@ public class Main {
 					} else {
 						file = new File("data/" + firstOrderOperator + ".csv");
 					}
+				}
+
+				if (System.getProperty("user.home").contains("deepti")) {
+					System.out.println("localq");
+					file = new File(Main.myTableName + ".csv");
+				} else {
+
+				file = new File("data/" + Main.myTableName + ".csv");
 				}
 
 				BufferedReader br = new BufferedReader(new FileReader(file));
@@ -625,15 +637,23 @@ public class Main {
 		StringBuilder sb = new StringBuilder();
 		if (groupByElementsList == null) {
 
-			for (int i = 0; i < aggAlias.length; i++) {
-				sb.append(aggResults.get(aggAlias[i]));
-				sb.append('|');
-			}
-
-			if (sb.length() > 0)
-				sb.setLength(sb.length() - 1);
-
-			System.out.println(sb);
+            for (int i = 0; i < aggAlias.length; i++) {
+                if (aggResults.get(aggAlias[i]) != null) {
+                    sb.append(aggResults.get(aggAlias[i]));
+                    sb.append('|');
+                }
+                if (aggNo[i] == 5 && aggResults.get(aggAlias[i]) == null) {
+                    sb.append(0);
+                    sb.append('|');
+                }
+            }
+            
+            if (sb.length() > 0) {
+                sb.setLength(sb.length() - 1);
+                
+                System.out.println(sb);
+            }
+            
 		} else {
 
 			List<String> tempList = new ArrayList<String>();
@@ -656,7 +676,7 @@ public class Main {
 			// System.out.println(Arrays.toString(pos));
 
 			// get the sel columns
-			for (Entry<String, Double[]> a : aggGroupByMap.entrySet()) {
+			for (Entry<String, HashMap<String, Double>> a : aggGroupByMap.entrySet()) {
 				sb = new StringBuilder();
 				String[] sitems = a.getKey().split(":");
 				// System.out.println(Arrays.toString(sitems));
@@ -672,26 +692,28 @@ public class Main {
 				}
 
 				// now get the agg results
-				for (int i = 0; i < numAggFunc; i++) {
+				HashMap<String, Double> agg = a.getValue();
+				Double count = agg.get(countAlias);
+				for (int i = 0; i < aggAlias.length; i++) {
 
-					if (aggNo[i] == 1) {
-						sb.append(a.getValue()[0]);
+					if (aggNo[i] == 4) {
+						i = i + 1;
+						sb.append(agg.get(aggAlias[i]) / count);
 						sb.append('|');
-					} else if (aggNo[i] == 2) {
-						sb.append(a.getValue()[1]);
-						sb.append('|');
-					} else if (aggNo[i] == 3) {
-						sb.append(a.getValue()[2]);
-						sb.append('|');
-					} else if (aggNo[i] == 4) {
-						sb.append(a.getValue()[3]);
-						sb.append('|');
-					} else if (aggNo[i] == 5) {
-						sb.append(a.getValue()[4]);
+					} else {
+
+						if (agg.get(aggAlias[i]) != null) {
+							sb.append(agg.get(aggAlias[i]));
+							sb.append('|');
+						}
+					}
+					if (aggNo[i] == 5 && agg.get(aggAlias[i]) == null) {
+						sb.append(0);
 						sb.append('|');
 					}
 
 				}
+
 				if (sb.length() > 0)
 					sb.setLength(sb.length() - 1);
 				System.out.println(sb);
@@ -709,9 +731,6 @@ public class Main {
 		print = false;
 		aggPrint = true;
 
-		boolean countOnce = false;
-		boolean sumOnce = false;
-
 		if (groupByElementsList != null) {
 
 			String key = "";
@@ -727,22 +746,29 @@ public class Main {
 
 			for (int i = 0; i < numAggFunc; i++) {
 
-				if ((aggNo[i] == 5 || aggNo[i] == 4) && (countOnce == false)) { // count
-																				// or
-																				// avg
+				if (aggNo[i] == 5) { // count
 
-					countOnce = true;
 					if (groupByElementsList.size() != 0) {
 
 						if (!aggGroupByMap.containsKey(key)) {
 
-							Double[] arr = { 0.0, (double) Integer.MAX_VALUE, (double) Integer.MIN_VALUE, 0.0, 1.0 };
-							aggGroupByMap.put(key, arr);
+							HashMap<String, Double> agg = new HashMap<>();
+							agg.put(aggAlias[i], 1.0);
+
+							aggGroupByMap.put(key, agg);
 
 						} else {
-							Double[] arr = aggGroupByMap.get(key);
-							arr[4] = arr[4] + 1;
-							aggGroupByMap.put(key, arr);
+							HashMap<String, Double> agg = aggGroupByMap.get(key);
+							if (!agg.containsKey(aggAlias[i])) {
+								// System.out.println("--count--");
+								agg.put(aggAlias[i], 1.0);
+							} else {
+								Double c = agg.get(aggAlias[i]);
+								c = c + 1;
+								agg.put(aggAlias[i], c);
+							}
+
+							aggGroupByMap.put(key, agg);
 						}
 
 					}
@@ -752,40 +778,60 @@ public class Main {
 					aggExpr = (Expression) aggExprs[i];
 					answer = computeExpression();
 
-					if ((aggNo[i] == 1 || aggNo[i] == 4) && (sumOnce == false)) {
+					if (aggNo[i] == 1) {
 
-						sumOnce = true;
 						if (groupByElementsList.size() != 0) {
 
 							if (!aggGroupByMap.containsKey(key)) {
 
-								Double[] arr = { answer.toDouble(), (double) Integer.MAX_VALUE,
-										(double) Integer.MIN_VALUE, 0.0, 0.0 };
-								aggGroupByMap.put(key, arr);
+								HashMap<String, Double> agg = new HashMap<>();
+								agg.put(aggAlias[i], answer.toDouble());
+
+								aggGroupByMap.put(key, agg);
 
 							} else {
-								Double[] arr = aggGroupByMap.get(key);
-								arr[0] = arr[0] + answer.toDouble();
-								aggGroupByMap.put(key, arr);
+
+								HashMap<String, Double> agg = aggGroupByMap.get(key);
+
+								if (!agg.containsKey(aggAlias[i])) {
+									agg.put(aggAlias[i], answer.toDouble());
+								} else {
+									Double sum = agg.get(aggAlias[i]) + answer.toDouble();
+									agg.put(aggAlias[i], sum);
+								}
+
+								aggGroupByMap.put(key, agg);
 							}
 
 						}
 
-					} else if (aggNo[i] == 2) {
+					} else if (aggNo[i] == 2) { // min
 
 						if (groupByElementsList.size() != 0) {
 
 							if (!aggGroupByMap.containsKey(key)) {
 
-								Double[] arr = { answer.toDouble(), answer.toDouble(), answer.toDouble(), 0.0, 0.0 };
-								aggGroupByMap.put(key, arr);
+								HashMap<String, Double> agg = new HashMap<>();
+								agg.put(aggAlias[i], answer.toDouble());
+
+								aggGroupByMap.put(key, agg);
 
 							} else {
-								Double[] arr = aggGroupByMap.get(key);
-								if (answer.toDouble() < arr[1]) {
-									arr[1] = answer.toDouble();
+
+								HashMap<String, Double> agg = aggGroupByMap.get(key);
+
+								if (!agg.containsKey(aggAlias[i])) {
+									agg.put(aggAlias[i], answer.toDouble());
+								} else {
+									Double min = agg.get(aggAlias[i]);
+									if (answer.toDouble() < min) {
+										min = answer.toDouble();
+										agg.put(aggAlias[i], min);
+									}
+
 								}
-								aggGroupByMap.put(key, arr);
+
+								aggGroupByMap.put(key, agg);
 							}
 
 						}
@@ -796,29 +842,60 @@ public class Main {
 
 							if (!aggGroupByMap.containsKey(key)) {
 
-								Double[] arr = { answer.toDouble(), (double) answer.toDouble(), answer.toDouble(), 0.0,
-										0.0 };
-								aggGroupByMap.put(key, arr);
+								HashMap<String, Double> agg = new HashMap<>();
+								agg.put(aggAlias[i], answer.toDouble());
+
+								aggGroupByMap.put(key, agg);
 
 							} else {
-								Double[] arr = aggGroupByMap.get(key);
-								if (answer.toDouble() > arr[2]) {
-									arr[2] = answer.toDouble();
+
+								HashMap<String, Double> agg = aggGroupByMap.get(key);
+
+								if (!agg.containsKey(aggAlias[i])) {
+									agg.put(aggAlias[i], answer.toDouble());
+								} else {
+									Double max = agg.get(aggAlias[i]);
+									if (answer.toDouble() > max) {
+										max = answer.toDouble();
+										agg.put(aggAlias[i], max);
+									}
+
 								}
-								aggGroupByMap.put(key, arr);
+
+								aggGroupByMap.put(key, agg);
 							}
 
+						}
+
+					} else if (aggNo[i] == 4) {
+
+						if (!aggGroupByMap.containsKey(key)) {
+
+							HashMap<String, Double> agg = new HashMap<>();
+							agg.put(aggAlias[i], answer.toDouble());
+
+							aggGroupByMap.put(key, agg);
+
+						} else {
+
+							HashMap<String, Double> agg = aggGroupByMap.get(key);
+
+							avgCount++;
+							avgTotal += answer.toDouble();
+							agg.put(aggAlias[i], avgTotal / avgCount);
+
+							aggGroupByMap.put(key, agg);
 						}
 
 					}
 				}
 				// if avg
-				if (aggNo[i] == 4) {
-
-					Double[] arr = aggGroupByMap.get(key);
-					arr[3] = arr[0] / arr[4];
-					aggGroupByMap.put(key, arr);
-				}
+				// if (aggNo[i] == 4) {
+				//
+				// Double[] arr = aggGroupByMap.get(key);
+				// arr[3] = arr[0] / arr[4];
+				// aggGroupByMap.put(key, arr);
+				// }
 
 			}
 		} else {
@@ -827,16 +904,17 @@ public class Main {
 			aggPrint = true;
 
 			for (int i = 0; i < numAggFunc; i++) {
-				if (aggNo[i] == 5) {
-					if (!aggResults.containsKey(aggAlias[i])) {
-						aggResults.put(aggAlias[i], 1.0);
-					} else {
-						Double c = aggResults.get(aggAlias[i]);
-						c = c + 1;
-						aggResults.put(aggAlias[i], c);
-					}
-
-				} else {
+                if (aggNo[i] == 5) {
+                    if (!aggResults.containsKey(aggAlias[i])) {
+                        // System.out.println("--count--");
+                        aggResults.put(aggAlias[i], 1.0);
+                    } else {
+                        Double c = aggResults.get(aggAlias[i]);
+                        c = c + 1;
+                        aggResults.put(aggAlias[i], c);
+                    }
+                    
+                } else {
 					aggExpr = (Expression) aggExprs[i];
 					answer = computeExpression();
 

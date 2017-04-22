@@ -145,9 +145,9 @@ public class ProcessQueries {
 	public static void getSelectItemsList() {
 
 		Main.selectItemsAsObject = new SelectItem[Main.plainSelect.getSelectItems().size()];
-		Main.aggNo = new int[Main.plainSelect.getSelectItems().size()];
-		Main.aggExprs = new Expression[Main.plainSelect.getSelectItems().size()];
-		Main.aggAlias = new String[Main.plainSelect.getSelectItems().size()];
+		Main.aggNo = new int[Main.plainSelect.getSelectItems().size() + 10];
+		Main.aggExprs = new Expression[Main.plainSelect.getSelectItems().size() + 10];
+		Main.aggAlias = new String[Main.plainSelect.getSelectItems().size() + 10];
 		
 		int i = 0, j = 0;
 		for (SelectItem sitem : Main.plainSelect.getSelectItems()) {
@@ -167,7 +167,18 @@ public class ProcessQueries {
 						//System.out.println("--" + Main.selExp);
 						Main.aggExprs[i] = (Expression)((Function) Main.selExp).getParameters().getExpressions().get(0);
 						//System.out.println(Main.aggExprs[i]);
+					}else{
+						Main.countAlias = Main.aggAlias[i];
 					}
+					
+					if(Main.aggNo[i] == 4){
+						
+						i = i+1;
+						Main.aggNo[i] = 1;
+						Main.aggAlias[i] = ((SelectExpressionItem)sitem).getAlias().toString()+"_S";
+						Main.aggExprs[i] = (Expression)((Function) Main.selExp).getParameters().getExpressions().get(0);
+					}
+					
 					i++;
 				} else {
 					Main.selectItemsAsObject[j] = sitem;
