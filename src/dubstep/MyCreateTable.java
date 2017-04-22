@@ -77,7 +77,7 @@ public class MyCreateTable {
 			}
 		}
 
-		makePrimaryMapping(Main.primaryKeyList);
+		//makePrimaryMapping(Main.primaryKeyList);
 		
 		for (String indexColumn : Main.primaryKeyList) {
 			sortMyTable(indexColumn, Main.primaryKeyList, "create");
