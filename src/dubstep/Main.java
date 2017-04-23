@@ -649,7 +649,9 @@ public class Main {
 				if (inmem == false && orderOperator == true && groupByOperator == true) {
 					outputDataOD.add(sb.toString());
 				} else {
+					if(inmem == false){
 					System.out.println(sb.toString());
+					}
 				}
 			}
 		} else {
@@ -725,7 +727,9 @@ public class Main {
 				if (inmem == false && orderOperator == true && groupByOperator == true) {
 					outputDataOD.add(sb.toString());
 				} else {
-					System.out.println(sb.toString());
+					if(inmem == false){
+						System.out.println(sb.toString());
+						}
 				}
 			}
 
@@ -1002,7 +1006,9 @@ public class Main {
 					if (inmem == false && orderOperator == true && groupByOperator == true) {
 						outputDataOD.add(sb.toString());
 					} else {
-						System.out.println(sb.toString());
+						if(inmem == false){
+							System.out.println(sb.toString());
+							}
 					}
 					count++;
 				}

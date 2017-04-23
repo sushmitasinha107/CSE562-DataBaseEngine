@@ -101,6 +101,11 @@ public class MyCreateTable {
 			//System.out.println("oIdx::" + oIdx);
 			
 			ExternalSort.onDiskSort(oIdx, "LINEITEM.RECEIPTDATE");
+			
+			oIdx = Main.columnOrderMapping.get("LINEITEM.QUANTITY");
+			//System.out.println("oIdx::" + oIdx);
+			
+			ExternalSort.onDiskSort(oIdx, "LINEITEM.QUANTITY");
 		}
 	}
 
