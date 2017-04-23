@@ -137,6 +137,7 @@ public class Main {
 	public static boolean line = false;
 
 	public static boolean isDone = false;
+	public static boolean stop = false;
 
 	public static boolean inmem = false;
 
@@ -229,6 +230,7 @@ public class Main {
 					count = 0;
 					limit = -1;
 					isDone = false;
+					stop = false;
 					groupByOperator = false;
 					orderOperator = false;
 
@@ -406,10 +408,17 @@ public class Main {
 			File file;
 			file = new File("data/" + Main.myTableName + ".csv");
 
-			BufferedReader br = new BufferedReader(new FileReader(file));
+			
 			// get the where clause
 			e = plainSelect.getWhere();
 
+			
+			if(e.toString().contains("LINEITEM.QUANTITY")){
+				file = new File("data/LINEITEM.QUANTITY.csv");
+			}
+			
+			BufferedReader br = new BufferedReader(new FileReader(file));
+			
 			// reinitializeValues();
 
 			PrimitiveValue ret = null;
@@ -419,7 +428,12 @@ public class Main {
 				while ((newRow = br.readLine()) != null) {
 
 					line = true;
-					processReadFromFile(ret);
+					if(stop == false){
+						processReadFromFile(ret);
+					}else{
+						//System.out.println("stopped");
+						break;
+					}
 				}
 
 				/*
@@ -580,6 +594,13 @@ public class Main {
 		// System.out.println();
 		if (line) {
 			values = newRow.split("\\|", -1);
+		}
+		
+		if(e.toString().contains("LINEITEM.QUANTITY")){
+			int ii = columnOrderMapping.get("LINEITEM.QUANTITY");
+			if(Integer.parseInt(values[ii]) > 26){
+				stop = true;
+			}
 		}
 
 		/* where clause evaluation */
