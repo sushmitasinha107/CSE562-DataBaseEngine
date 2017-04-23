@@ -341,13 +341,7 @@ public class Main {
 		if (orderOperator == false) {
 
 			File file;
-			if (System.getProperty("user.home").contains("deepti")) {
-				System.out.println("local");
-				file = new File(myTableName + ".csv");
-			} else {
-
-				file = new File("data/" + myTableName + ".csv");
-			}
+			file = new File("data/" + Main.myTableName + ".csv");
 
 			BufferedReader br = new BufferedReader(new FileReader(file));
 			// get the where clause

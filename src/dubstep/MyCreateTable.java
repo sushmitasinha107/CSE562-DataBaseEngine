@@ -86,6 +86,16 @@ public class MyCreateTable {
 			for (String indexColumn : indexKeyList) {
 				sortMyTable(Main.myTableName + "." + indexColumn, Main.primaryKeyList);
 			}
+		}else{
+			
+			// onDisk sort
+			//pass index of column to sort
+			//get index of "LINEITEM.RETURNFLAG", "LINEITEM.RECEIPTDATE" and "LINEITEM.LINESTATUS"
+			
+			int oIdx = Main.columnOrderMapping.get("LINEITEM.RETURNFLAG");
+			System.out.println("oIdx::" + oIdx);
+			
+			ExternalSort.onDiskSort(oIdx, "LINEITEM.RETURNFLAG");
 		}
 	}
 
@@ -101,14 +111,15 @@ public class MyCreateTable {
 	private static void makePrimaryMapping(List<String> primaryKeyList) throws IOException {
 
 		File file;
-		if (System.getProperty("user.home").contains("deepti")) {
-			System.out.println("localq");
-			file = new File(Main.myTableName + ".csv");
-		} else {
+//		if (System.getProperty("user.home").contains("deepti")) {
+//			System.out.println("localq");
+//			file = new File(Main.myTableName + ".csv");
+//		} else {
+//
+//			file = new File("data/" + Main.myTableName + ".csv");
+//		}
 
-			file = new File("data/" + Main.myTableName + ".csv");
-		}
-
+		file = new File("data/" + Main.myTableName + ".csv");
 		//List<String> lines = Files.readAllLines(Paths.get(Main.myTableName + ".csv"), StandardCharsets.UTF_8);
 		
 		BufferedReader br = new BufferedReader(new FileReader(file));
