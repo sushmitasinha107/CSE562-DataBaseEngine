@@ -86,7 +86,8 @@ public class MyCreateTable {
 			for (String indexColumn : indexKeyList) {
 				sortMyTable(Main.myTableName + "." + indexColumn, Main.primaryKeyList);
 			}
-		}else{
+		}
+		else{
 			
 			// onDisk sort
 			//pass index of column to sort
@@ -95,12 +96,17 @@ public class MyCreateTable {
 			int oIdx = Main.columnOrderMapping.get("LINEITEM.RETURNFLAG");
 			//System.out.println("oIdx::" + oIdx);
 			
-			ExternalSort.onDiskSort(oIdx, "LINEITEM.RETURNFLAG");
+			//ExternalSort.onDiskSort(oIdx, "LINEITEM.RETURNFLAG");
 			
 			oIdx = Main.columnOrderMapping.get("LINEITEM.RECEIPTDATE");
 			//System.out.println("oIdx::" + oIdx);
 			
 			ExternalSort.onDiskSort(oIdx, "LINEITEM.RECEIPTDATE");
+			
+			oIdx = Main.columnOrderMapping.get("LINEITEM.QUANTITY");
+			//System.out.println("oIdx::" + oIdx);
+			
+			ExternalSort.onDiskSort(oIdx, "LINEITEM.QUANTITY");
 		}
 	}
 

@@ -9,6 +9,7 @@ import java.io.InputStreamReader;
 import java.io.StringReader;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -192,7 +193,7 @@ public class Main {
 		 */
 		while ((inputString = br.readLine()) != null) {
 
-			//inputString = inputString.toUpperCase();
+			// inputString = inputString.toUpperCase();
 			inputString = inputString.toUpperCase();
 
 			StringBuilder inputStringBuilder = new StringBuilder();
@@ -205,7 +206,7 @@ public class Main {
 			}
 
 			input = new StringReader(inputString);
-			//input = new StringReader(inputString);
+			// input = new StringReader(inputString);
 			parser = new CCJSqlParser(input);
 
 			try {
@@ -230,7 +231,7 @@ public class Main {
 					isDone = false;
 					groupByOperator = false;
 					orderOperator = false;
-					
+
 					outputDataOD = new ArrayList<>();
 
 					innerSelects = new ArrayList<>(); // stores nested select
@@ -331,9 +332,10 @@ public class Main {
 							pq.processInnermostSelect(myTableName);
 						}
 					}
-					
-					//System.out.println(inmem + " -- " + orderOperator + " -- " + groupByOperator);
-					
+
+					// System.out.println(inmem + " -- " + orderOperator + " --
+					// " + groupByOperator);
+
 					if (inmem == false && orderOperator == true && groupByOperator == true) {
 						TreeMap<String, List<String>> outputDataODMap = new TreeMap<>();
 						List<String> list = new ArrayList<String>();
@@ -360,7 +362,7 @@ public class Main {
 
 						Iterator iterator = outputDataODMap.entrySet().iterator();
 
-						//System.out.println("printing");
+						// System.out.println("printing");
 						while (iterator.hasNext()) {
 							Map.Entry entry = (Entry) iterator.next();
 							for (String rowString : (ArrayList<String>) entry.getValue()) {
@@ -444,10 +446,21 @@ public class Main {
 			// start of in-mem
 			if (inmem) {
 				TreeMap orderIndexMap = new TreeMap<>();
+				System.out.println(firstOrderOperator);
+				String[] temp12 = firstOrderOperator.split("\\.");
+				System.out.println(Arrays.toString(temp12));
+				boolean m = false;
+				
+				for(Entry<String, Map> ci : columnIndex.entrySet()){
+					if(ci.getKey().contains(temp12[1])){
+						System.out.println("index present");
+						orderIndexMap = (TreeMap) ci.getValue();
+						m = true;
+						break;
+					}
+				}
 
-				if (columnIndex.containsKey(firstOrderOperator)) {
-					orderIndexMap = (TreeMap) columnIndex.get(firstOrderOperator);
-				} else {
+				if(m == false){
 					// if index not built on order by column, build it on the
 					// fly
 					MyCreateTable.sortMyTable(firstOrderOperator, tableData.getPrimaryKeyList());
@@ -514,7 +527,7 @@ public class Main {
 
 				// ---------------------------onDisk---------------------------
 
-				//System.out.println("file:" + firstOrderOperator);
+				// System.out.println("file:" + firstOrderOperator);
 				File file;
 				file = new File("data/" + firstOrderOperator + ".csv");
 
@@ -529,6 +542,11 @@ public class Main {
 				try {
 
 					while ((newRow = br.readLine()) != null) {
+						
+						if(isDone){
+							//System.out.println("done dona done done!");
+							break;
+						}
 
 						line = true;
 						processReadFromFile(ret);
@@ -649,8 +667,8 @@ public class Main {
 				if (inmem == false && orderOperator == true && groupByOperator == true) {
 					outputDataOD.add(sb.toString());
 				} else {
-					if(inmem == false){
-					System.out.println(sb.toString());
+					if (inmem == false) {
+						System.out.println(sb.toString());
 					}
 				}
 			}
@@ -727,9 +745,9 @@ public class Main {
 				if (inmem == false && orderOperator == true && groupByOperator == true) {
 					outputDataOD.add(sb.toString());
 				} else {
-					if(inmem == false){
+					if (inmem == false) {
 						System.out.println(sb.toString());
-						}
+					}
 				}
 			}
 
@@ -982,6 +1000,7 @@ public class Main {
 	public static void printToConsole() throws SQLException {
 
 		if (selectStar == true) {
+			
 			if (outermost && ((limit >= 1 && count < limit) || limit == -1)) {
 				if (values != null) {
 					StringBuilder sb = new StringBuilder();
@@ -998,6 +1017,7 @@ public class Main {
 
 					// System.out.println(sb);
 					if (inmem) {
+						System.out.println("conut: " + count);
 						System.out.println(sb);
 					}
 
@@ -1066,8 +1086,8 @@ public class Main {
 					if (inmem == false && orderOperator == true && groupByOperator == true) {
 						outputDataOD.add(sbuilder.toString());
 					} else {
-						if(inmem == false){
-						System.out.println(sbuilder.toString());
+						if (inmem == false) {
+							System.out.println(sbuilder.toString());
 						}
 					}
 					count++;
