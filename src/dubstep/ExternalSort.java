@@ -158,7 +158,13 @@ public class ExternalSort {
 				}else if (a1Arr[idx].compareTo(a2Arr[idx]) == -1){
 					return -1;
 				}else{
-					return (a1Arr[0].compareTo(a2Arr[0]) );
+					if(a1Arr[0].compareTo(a2Arr[0]) == 1){
+						return 1;
+					}else if (a1Arr[0].compareTo(a2Arr[0]) == -1){
+						return -1;
+					}else{
+						return (a1Arr[3].compareTo(a2Arr[3]));
+					}
 				}
 				
 				//return a1Arr[idx].compareTo(a2Arr[idx]);
