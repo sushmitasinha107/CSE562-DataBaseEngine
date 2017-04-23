@@ -86,16 +86,6 @@ public class MyCreateTable {
 			for (String indexColumn : indexKeyList) {
 				sortMyTable(Main.myTableName + "." + indexColumn, Main.primaryKeyList);
 			}
-		}else{
-			
-			// onDisk sort
-			//pass index of column to sort
-			//get index of "LINEITEM.RETURNFLAG", "LINEITEM.RECEIPTDATE" and "LINEITEM.LINESTATUS"
-			
-			int oIdx = Main.columnOrderMapping.get("LINEITEM.LINESTATUS");
-			System.out.println("oIdx::" + oIdx);
-			OnDiskSort ods = new OnDiskSort(oIdx);
-			ods.sortOnDisk();
 		}
 	}
 
