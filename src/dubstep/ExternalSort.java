@@ -151,7 +151,14 @@ public class ExternalSort {
 			public int compare(String a1, String a2) {
 				String a1Arr[] = a1.split("\\|");
 				String a2Arr[] = a2.split("\\|");
-				return a1Arr[idx].compareTo(a2Arr[idx]);
+				
+				if(a1Arr[idx].compareTo(a2Arr[idx]) == 1 || a1Arr[idx].compareTo(a2Arr[idx]) == 0){
+					return 1;
+				}else{
+					return -1;
+				}
+				
+				//return a1Arr[idx].compareTo(a2Arr[idx]);
 			}
 		};
 		List<File> l = sortInBatch(new File("data/" + inputfile), comparator);

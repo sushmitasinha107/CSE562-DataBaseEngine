@@ -1006,9 +1006,9 @@ public class Main {
 					if (inmem == false && orderOperator == true && groupByOperator == true) {
 						outputDataOD.add(sb.toString());
 					} else {
-						if(inmem == false){
+						if (inmem == false) {
 							System.out.println(sb.toString());
-							}
+						}
 					}
 					count++;
 				}
