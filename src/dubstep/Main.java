@@ -332,7 +332,7 @@ public class Main {
 						}
 					}
 					
-					System.out.println(inmem + " -- " + orderOperator + " -- " + groupByOperator);
+					//System.out.println(inmem + " -- " + orderOperator + " -- " + groupByOperator);
 					
 					if (inmem == false && orderOperator == true && groupByOperator == true) {
 						TreeMap<String, List<String>> outputDataODMap = new TreeMap<>();
@@ -360,7 +360,7 @@ public class Main {
 
 						Iterator iterator = outputDataODMap.entrySet().iterator();
 
-						System.out.println("printing");
+						//System.out.println("printing");
 						while (iterator.hasNext()) {
 							Map.Entry entry = (Entry) iterator.next();
 							for (String rowString : (ArrayList<String>) entry.getValue()) {
@@ -514,7 +514,7 @@ public class Main {
 
 				// ---------------------------onDisk---------------------------
 
-				System.out.println("file:" + firstOrderOperator);
+				//System.out.println("file:" + firstOrderOperator);
 				File file;
 				file = new File("data/" + firstOrderOperator + ".csv");
 
@@ -1060,7 +1060,9 @@ public class Main {
 					if (inmem == false && orderOperator == true && groupByOperator == true) {
 						outputDataOD.add(sbuilder.toString());
 					} else {
+						if(inmem == false){
 						System.out.println(sbuilder.toString());
+						}
 					}
 					count++;
 				}

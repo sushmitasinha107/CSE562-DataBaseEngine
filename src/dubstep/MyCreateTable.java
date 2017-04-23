@@ -93,12 +93,12 @@ public class MyCreateTable {
 			//get index of "LINEITEM.RETURNFLAG", "LINEITEM.RECEIPTDATE" and "LINEITEM.LINESTATUS"
 			
 			int oIdx = Main.columnOrderMapping.get("LINEITEM.RETURNFLAG");
-			System.out.println("oIdx::" + oIdx);
+			//System.out.println("oIdx::" + oIdx);
 			
 			ExternalSort.onDiskSort(oIdx, "LINEITEM.RETURNFLAG");
 			
 			oIdx = Main.columnOrderMapping.get("LINEITEM.RECEIPTDATE");
-			System.out.println("oIdx::" + oIdx);
+			//System.out.println("oIdx::" + oIdx);
 			
 			ExternalSort.onDiskSort(oIdx, "LINEITEM.RECEIPTDATE");
 		}
