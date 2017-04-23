@@ -152,10 +152,12 @@ public class ExternalSort {
 				String a1Arr[] = a1.split("\\|");
 				String a2Arr[] = a2.split("\\|");
 				
-				if(a1Arr[idx].compareTo(a2Arr[idx]) == 1 || a1Arr[idx].compareTo(a2Arr[idx]) == 0){
+				if(a1Arr[idx].compareTo(a2Arr[idx]) == 1){
 					return 1;
-				}else{
+				}else if (a1Arr[idx].compareTo(a2Arr[idx]) == -1){
 					return -1;
+				}else{
+					return 0;
 				}
 				
 				//return a1Arr[idx].compareTo(a2Arr[idx]);
