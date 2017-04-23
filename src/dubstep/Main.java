@@ -140,7 +140,7 @@ public class Main {
 	public static boolean inmem = false;
 
 	public static boolean groupByOperator = false;
-	
+
 	public static List<String> outputDataOD = new ArrayList<>();
 
 	public static int getAggNo(AggFunctions aggName) {
@@ -192,8 +192,20 @@ public class Main {
 		 */
 		while ((inputString = br.readLine()) != null) {
 
+			//inputString = inputString.toUpperCase();
 			inputString = inputString.toUpperCase();
+
+			StringBuilder inputStringBuilder = new StringBuilder();
+			inputStringBuilder.append(inputString);
+
+			while (inputString.contains(";") == false && (inputString = br.readLine()) != null) {
+				inputStringBuilder.append(" ");
+				inputStringBuilder.append(inputString);
+				inputString = inputStringBuilder.toString();
+			}
+
 			input = new StringReader(inputString);
+			//input = new StringReader(inputString);
 			parser = new CCJSqlParser(input);
 
 			try {
@@ -378,7 +390,7 @@ public class Main {
 		aggGroupByMap = new HashMap<>();
 		aggResults = new HashMap<>();
 
-		//orderOperator = false;
+		// orderOperator = false;
 
 	}
 
@@ -518,7 +530,6 @@ public class Main {
 
 					while ((newRow = br.readLine()) != null) {
 
-						
 						line = true;
 						processReadFromFile(ret);
 					}
@@ -628,7 +639,7 @@ public class Main {
 			if (sb.length() > 0) {
 				sb.setLength(sb.length() - 1);
 
-				//System.out.println(sb);
+				// System.out.println(sb);
 				if (inmem) {
 					System.out.println(sb);
 				}
@@ -703,8 +714,8 @@ public class Main {
 
 				if (sb.length() > 0)
 					sb.setLength(sb.length() - 1);
-				
-				//System.out.println(sb);
+
+				// System.out.println(sb);
 				if (inmem) {
 					System.out.println(sb);
 				}
@@ -1039,7 +1050,7 @@ public class Main {
 
 			if (outermost && ((limit >= 1 && count < limit) || limit == -1)) {
 				if (values != null) {
-					//System.out.println(sbuilder.toString());
+					// System.out.println(sbuilder.toString());
 					if (inmem) {
 						System.out.println(sbuilder);
 					}
