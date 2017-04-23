@@ -9,6 +9,8 @@ import java.io.InputStreamReader;
 import java.io.StringReader;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -134,10 +136,12 @@ public class Main {
 	public static boolean line = false;
 
 	public static boolean isDone = false;
-	
+
 	public static boolean inmem = false;
+
+	public static boolean groupByOperator = false;
 	
-	
+	public static List<String> outputDataOD = new ArrayList<>();
 
 	public static int getAggNo(AggFunctions aggName) {
 		if (aggName == AggFunctions.SUM || aggName == AggFunctions.sum) {
@@ -171,8 +175,7 @@ public class Main {
 	}
 
 	public static void main(String[] args) throws ParseException, SQLException, IOException {
-		
-		
+
 		String phase = args[1];
 		if (phase.equals("--in-mem")) {
 			inmem = true;
@@ -213,6 +216,10 @@ public class Main {
 					count = 0;
 					limit = -1;
 					isDone = false;
+					groupByOperator = false;
+					orderOperator = false;
+					
+					outputDataOD = new ArrayList<>();
 
 					innerSelects = new ArrayList<>(); // stores nested select
 														// statements
@@ -225,6 +232,10 @@ public class Main {
 
 					// orderByElementsList = plainSelect.getOrderByElements();
 					groupByElementsList = plainSelect.getGroupByColumnReferences();
+
+					if (groupByElementsList != null) {
+						groupByOperator = true;
+					}
 
 					// System.out.println("gb::" + groupByElementsList);
 
@@ -308,6 +319,44 @@ public class Main {
 							pq.processInnermostSelect(myTableName);
 						}
 					}
+					
+					System.out.println(inmem + " -- " + orderOperator + " -- " + groupByOperator);
+					
+					if (inmem == false && orderOperator == true && groupByOperator == true) {
+						TreeMap<String, List<String>> outputDataODMap = new TreeMap<>();
+						List<String> list = new ArrayList<String>();
+						for (String rowVal : outputDataOD) {
+							String opVal[] = rowVal.split("\\|");
+
+							if (outputDataODMap.containsKey(opVal[0])) {
+								list = (List<String>) outputDataODMap.get(opVal[0]);
+								list.add(rowVal);
+								Collections.sort(list, new Comparator<String>() {
+									public int compare(String a1, String a2) {
+										String a1Arr[] = a1.split("\\|");
+										String a2Arr[] = a2.split("\\|");
+										return a1Arr[1].compareTo(a2Arr[1]);
+									}
+								});
+								outputDataODMap.put(opVal[0], list);
+							} else {
+								list = new ArrayList<String>();
+								list.add(rowVal);
+								outputDataODMap.put(opVal[0], list);
+							}
+						}
+
+						Iterator iterator = outputDataODMap.entrySet().iterator();
+
+						System.out.println("printing");
+						while (iterator.hasNext()) {
+							Map.Entry entry = (Entry) iterator.next();
+							for (String rowString : (ArrayList<String>) entry.getValue()) {
+								System.out.println(rowString);
+							}
+
+						}
+					}
 
 				} else {
 					// System.out.println("Not of type select");
@@ -329,7 +378,7 @@ public class Main {
 		aggGroupByMap = new HashMap<>();
 		aggResults = new HashMap<>();
 
-		orderOperator = false;
+		//orderOperator = false;
 
 	}
 
@@ -376,72 +425,117 @@ public class Main {
 			e = plainSelect.getWhere();
 			reinitializeValues();
 			PrimitiveValue ret = null;
-			TreeMap orderIndexMap = new TreeMap<>();
 
+			// firstOrderOperator csv file name
 			String firstOrderOperator = orderByElementsList.get(0);
-			if (columnIndex.containsKey(firstOrderOperator)) {
-				orderIndexMap = (TreeMap) columnIndex.get(firstOrderOperator);
-			} else {
-				// if index not built on order by column, build it on the fly
-				MyCreateTable.sortMyTable(firstOrderOperator, tableData.getPrimaryKeyList());
-				orderIndexMap = (TreeMap) columnIndex.get(firstOrderOperator);
-			}
 
-			// iterate through sorted hashmap to fetch rows
+			// start of in-mem
+			if (inmem) {
+				TreeMap orderIndexMap = new TreeMap<>();
 
-			Iterator iterator = null;
-			if (orderByElementsSortOrder.get(firstOrderOperator) == 1) {
-				iterator = orderIndexMap.entrySet().iterator();
-			} else {
-				iterator = orderIndexMap.descendingMap().entrySet().iterator();
-			}
-
-			while (iterator.hasNext()) {
-
-				if (isDone) {
-					break;
+				if (columnIndex.containsKey(firstOrderOperator)) {
+					orderIndexMap = (TreeMap) columnIndex.get(firstOrderOperator);
+				} else {
+					// if index not built on order by column, build it on the
+					// fly
+					MyCreateTable.sortMyTable(firstOrderOperator, tableData.getPrimaryKeyList());
+					orderIndexMap = (TreeMap) columnIndex.get(firstOrderOperator);
 				}
 
-				Map.Entry entry = (Entry) iterator.next();
+				// iterate through sorted hashmap to fetch rows
 
-				// System.out.println("--" + entry);
+				Iterator iterator = null;
+				if (orderByElementsSortOrder.get(firstOrderOperator) == 1) {
+					iterator = orderIndexMap.entrySet().iterator();
+				} else {
+					iterator = orderIndexMap.descendingMap().entrySet().iterator();
+				}
 
-				// if multiple rows have same index value(clustered)
-				List<Long> toOrderByElement2 = (List<Long>) entry.getValue();
+				while (iterator.hasNext()) {
 
-				if (toOrderByElement2.size() > 1 && orderByElementsList.size() > 1) {
-					// 2 order by column criteria, then sort the cluster based
-					// on second column
-					toOrderByElement2 = MyCreateTable.sortOnIndex2(orderByElementsList.get(1), toOrderByElement2);
+					if (isDone) {
+						break;
+					}
 
-					// print cluster in rev when desc(desc = 2)
-					if (orderByElementsSortOrder.get(orderByElementsList.get(1)) == 2) {
-						for (int i = toOrderByElement2.size() - 1; i >= 0; i--) {
-							values = primaryKeyIndex.get(toOrderByElement2.get(i));
-							processReadFromFile(ret);
+					Map.Entry entry = (Entry) iterator.next();
+
+					// System.out.println("--" + entry);
+
+					// if multiple rows have same index value(clustered)
+					List<Long> toOrderByElement2 = (List<Long>) entry.getValue();
+
+					if (toOrderByElement2.size() > 1 && orderByElementsList.size() > 1) {
+						// 2 order by column criteria, then sort the cluster
+						// based
+						// on second column
+						toOrderByElement2 = MyCreateTable.sortOnIndex2(orderByElementsList.get(1), toOrderByElement2);
+
+						// print cluster in rev when desc(desc = 2)
+						if (orderByElementsSortOrder.get(orderByElementsList.get(1)) == 2) {
+							for (int i = toOrderByElement2.size() - 1; i >= 0; i--) {
+								values = primaryKeyIndex.get(toOrderByElement2.get(i));
+								processReadFromFile(ret);
+							}
+
+						} else {
+							for (Long rowString : toOrderByElement2) {
+								// read new row from (PK,entire row ) map
+								values = primaryKeyIndex.get(rowString);
+								processReadFromFile(ret);
+							}
 						}
-
 					} else {
+
+						// clustered index
 						for (Long rowString : toOrderByElement2) {
 							// read new row from (PK,entire row ) map
 							values = primaryKeyIndex.get(rowString);
 							processReadFromFile(ret);
 						}
 					}
-				} else {
 
-					// clustered index
-					for (Long rowString : toOrderByElement2) {
-						// read new row from (PK,entire row ) map
-						values = primaryKeyIndex.get(rowString);
+				}
+
+				if (numAggFunc > 0)
+					printAggregateResult();
+			} else {
+
+				// ---------------------------onDisk---------------------------
+
+				System.out.println("file:" + firstOrderOperator);
+				File file;
+				file = new File("data/" + firstOrderOperator + ".csv");
+
+				BufferedReader br = new BufferedReader(new FileReader(file));
+				// get the where clause
+				e = plainSelect.getWhere();
+
+				// reinitializeValues();
+
+				ret = null;
+
+				try {
+
+					while ((newRow = br.readLine()) != null) {
+
+						
+						line = true;
 						processReadFromFile(ret);
 					}
+
+					/*
+					 * done with file reading...if aggregate function, then
+					 * print after this and not in printToConsole
+					 */
+
+					if (numAggFunc > 0)
+						printAggregateResult();
+
+				} catch (FileNotFoundException e) {
+					e.printStackTrace();
 				}
 
 			}
-
-			if (numAggFunc > 0)
-				printAggregateResult();
 		}
 	}
 
@@ -453,6 +547,8 @@ public class Main {
 
 		/* read line from csv file */
 		/* values array have individual column values from the file */
+
+		// System.out.println();
 		if (line) {
 			values = newRow.split("\\|", -1);
 		}
@@ -532,7 +628,18 @@ public class Main {
 			if (sb.length() > 0) {
 				sb.setLength(sb.length() - 1);
 
-				System.out.println(sb);
+				//System.out.println(sb);
+				if (inmem) {
+					System.out.println(sb);
+				}
+
+				// put in map if ondisk & order operator present
+
+				if (inmem == false && orderOperator == true && groupByOperator == true) {
+					outputDataOD.add(sb.toString());
+				} else {
+					System.out.println(sb.toString());
+				}
 			}
 		} else {
 
@@ -596,7 +703,19 @@ public class Main {
 
 				if (sb.length() > 0)
 					sb.setLength(sb.length() - 1);
-				System.out.println(sb);
+				
+				//System.out.println(sb);
+				if (inmem) {
+					System.out.println(sb);
+				}
+
+				// put in map if ondisk & order operator present
+
+				if (inmem == false && orderOperator == true && groupByOperator == true) {
+					outputDataOD.add(sb.toString());
+				} else {
+					System.out.println(sb.toString());
+				}
 			}
 
 		}
@@ -862,7 +981,18 @@ public class Main {
 					if (sb.length() > 0)
 						sb.setLength(sb.length() - 1);
 
-					System.out.println(sb);
+					// System.out.println(sb);
+					if (inmem) {
+						System.out.println(sb);
+					}
+
+					// put in map if ondisk & order operator present
+
+					if (inmem == false && orderOperator == true && groupByOperator == true) {
+						outputDataOD.add(sb.toString());
+					} else {
+						System.out.println(sb.toString());
+					}
 					count++;
 				}
 				if (innerSelects.size() != 0) {
@@ -909,7 +1039,18 @@ public class Main {
 
 			if (outermost && ((limit >= 1 && count < limit) || limit == -1)) {
 				if (values != null) {
-					System.out.println(sbuilder.toString());
+					//System.out.println(sbuilder.toString());
+					if (inmem) {
+						System.out.println(sbuilder);
+					}
+
+					// put in map if ondisk & order operator present
+
+					if (inmem == false && orderOperator == true && groupByOperator == true) {
+						outputDataOD.add(sbuilder.toString());
+					} else {
+						System.out.println(sbuilder.toString());
+					}
 					count++;
 				}
 				if (innerSelects.size() != 0) {

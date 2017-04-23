@@ -96,6 +96,11 @@ public class MyCreateTable {
 			System.out.println("oIdx::" + oIdx);
 			
 			ExternalSort.onDiskSort(oIdx, "LINEITEM.RETURNFLAG");
+			
+			oIdx = Main.columnOrderMapping.get("LINEITEM.RECEIPTDATE");
+			System.out.println("oIdx::" + oIdx);
+			
+			ExternalSort.onDiskSort(oIdx, "LINEITEM.RECEIPTDATE");
 		}
 	}
 
