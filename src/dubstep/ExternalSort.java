@@ -147,6 +147,7 @@ public class ExternalSort {
 		// }
 		String inputfile = "LINEITEM.csv";
 		String outputfile = opFile;
+		System.setProperty("java.util.Arrays.useLegacyMergeSort", "true");
 		Comparator<String> comparator = new Comparator<String>() {
 			public int compare(String a1, String a2) {
 				String a1Arr[] = a1.split("\\|");
@@ -157,7 +158,7 @@ public class ExternalSort {
 				}else if (a1Arr[idx].compareTo(a2Arr[idx]) == -1){
 					return -1;
 				}else{
-					return 0;
+					return 1;
 				}
 				
 				//return a1Arr[idx].compareTo(a2Arr[idx]);
