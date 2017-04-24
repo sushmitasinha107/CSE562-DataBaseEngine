@@ -460,14 +460,14 @@ public class Main {
 			// start of in-mem
 			if (inmem) {
 				TreeMap orderIndexMap = new TreeMap<>();
-				System.out.println(firstOrderOperator);
+				//System.out.println(firstOrderOperator);
 				String[] temp12 = firstOrderOperator.split("\\.");
-				System.out.println(Arrays.toString(temp12));
+				//System.out.println(Arrays.toString(temp12));
 				boolean m = false;
 				
 				for(Entry<String, Map> ci : columnIndex.entrySet()){
 					if(ci.getKey().contains(temp12[1])){
-						System.out.println("index present");
+						//System.out.println("index present");
 						orderIndexMap = (TreeMap) ci.getValue();
 						m = true;
 						break;
