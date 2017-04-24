@@ -412,11 +412,11 @@ public class Main {
 			// get the where clause
 			e = plainSelect.getWhere();
 
-			
-			if(e.toString().contains("LINEITEM.QUANTITY")){
-				file = new File("data/LINEITEM.QUANTITY.csv");
+			if (e != null) {
+				if (e.toString().contains("LINEITEM.QUANTITY")) {
+					file = new File("data/LINEITEM.QUANTITY.csv");
+				}
 			}
-			
 			BufferedReader br = new BufferedReader(new FileReader(file));
 			
 			// reinitializeValues();
