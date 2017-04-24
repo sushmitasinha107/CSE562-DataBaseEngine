@@ -412,11 +412,11 @@ public class Main {
 			// get the where clause
 			e = plainSelect.getWhere();
 
-			if (e != null) {
-				if (e.toString().contains("LINEITEM.QUANTITY")) {
-					file = new File("data/LINEITEM.QUANTITY.csv");
-				}
-			}
+//			if (e != null) {
+//				if (e.toString().contains("LINEITEM.QUANTITY")) {
+//					file = new File("data/LINEITEM.QUANTITY.csv");
+//				}
+//			}
 			BufferedReader br = new BufferedReader(new FileReader(file));
 			
 			// reinitializeValues();
@@ -428,12 +428,12 @@ public class Main {
 				while ((newRow = br.readLine()) != null) {
 
 					line = true;
-					if(stop == false){
+					//if(stop == false){
 						processReadFromFile(ret);
-					}else{
-						//System.out.println("stopped");
-						break;
-					}
+//					}else{
+//						//System.out.println("stopped");
+//						break;
+//					}
 				}
 
 				/*
@@ -601,12 +601,12 @@ public class Main {
 		/* where clause evaluation */
 		if (!(e == null)) {
 			
-			if(e.toString().contains("LINEITEM.QUANTITY")){
-				int ii = columnOrderMapping.get("LINEITEM.QUANTITY");
-				if(Integer.parseInt(values[ii]) > 26){
-					stop = true;
-				}
-			}
+//			if(e.toString().contains("LINEITEM.QUANTITY")){
+//				int ii = columnOrderMapping.get("LINEITEM.QUANTITY");
+//				if(Integer.parseInt(values[ii]) > 26){
+//					stop = true;
+//				}
+//			}
 
 			if (eval.eval(e).toBool()) {
 				if (numAggFunc > 0) {
