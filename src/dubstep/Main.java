@@ -596,15 +596,17 @@ public class Main {
 			values = newRow.split("\\|", -1);
 		}
 		
-		if(e.toString().contains("LINEITEM.QUANTITY")){
-			int ii = columnOrderMapping.get("LINEITEM.QUANTITY");
-			if(Integer.parseInt(values[ii]) > 26){
-				stop = true;
-			}
-		}
+		
 
 		/* where clause evaluation */
 		if (!(e == null)) {
+			
+			if(e.toString().contains("LINEITEM.QUANTITY")){
+				int ii = columnOrderMapping.get("LINEITEM.QUANTITY");
+				if(Integer.parseInt(values[ii]) > 26){
+					stop = true;
+				}
+			}
 
 			if (eval.eval(e).toBool()) {
 				if (numAggFunc > 0) {
