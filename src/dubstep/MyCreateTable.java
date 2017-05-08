@@ -75,7 +75,7 @@ public class MyCreateTable {
 				}
 			}
 		}
-
+/*
 		if (Main.inmem) {
 			makePrimaryMapping(Main.primaryKeyList);
 
@@ -108,6 +108,8 @@ public class MyCreateTable {
 			
 			ExternalSort.onDiskSort(oIdx, "LINEITEM.QUANTITY");
 		}
+
+		*/
 	}
 
 	private static String getNext(StringTokenizer st){  
