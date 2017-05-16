@@ -76,7 +76,7 @@ public class MyCreateTable {
 			}
 		}
 
-		if (Main.inmem) {
+		//if (Main.inmem) {
 			makePrimaryMapping(Main.primaryKeyList);
 
 			for (String indexColumn : Main.primaryKeyList) {
@@ -86,7 +86,8 @@ public class MyCreateTable {
 			for (String indexColumn : indexKeyList) {
 				sortMyTable(Main.myTableName + "." + indexColumn, Main.primaryKeyList);
 			}
-		}
+		//}
+		/*
 		else{
 			
 			// onDisk sort
@@ -108,6 +109,7 @@ public class MyCreateTable {
 			
 			ExternalSort.onDiskSort(oIdx, "LINEITEM.QUANTITY");
 		}
+		*/
 
 		
 	}
