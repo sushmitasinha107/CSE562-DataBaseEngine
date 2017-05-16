@@ -246,7 +246,7 @@ public class MyCreateTable {
 			if (ptype1 == Main.SQLDataType.sqlint) {
 
 
-				System.out.println("values[idx] ::" + values[idx]);
+				//System.out.println("values[idx] ::" + values[idx]);
 				int key = Integer.parseInt(values[idx]);
 				if (map.containsKey(key)) {
 					list = (List<Long>) map.get(key);
