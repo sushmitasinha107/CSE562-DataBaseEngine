@@ -35,6 +35,7 @@ public class MyCreateTable {
 		List<Index> tableIndex = Main.table.getIndexes();
 		List<String> indexKeyList = new ArrayList<>();
 		Main.primaryKeyList = new ArrayList<>();
+		Main.primaryKeyIndex = new HashMap<Long, String[]>();
 
 		Main.myTableName = Main.table.getTable().getName();
 		Main.tableData = new TableData();
