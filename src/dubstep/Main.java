@@ -1558,10 +1558,12 @@ public class Main {
 
 			if (isJoin) {
 				
-				//System.out.println("c :: " + c);
+				System.out.println("c :: " + c);
 				String[] temp = c.toString().split("\\.");
 				String tbl = temp[0];
 				//System.out.println("tbl :: " + tbl);
+				
+				System.out.println("columnOrderMappingJoin :: " + columnOrderMappingJoin);
 				
 				int idx = columnOrderMappingJoin.get(c.toString());
 				String ptype = columnDataTypeMapping.get(c.toString());
