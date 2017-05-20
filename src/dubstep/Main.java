@@ -541,6 +541,7 @@ public class Main {
 
 	public static void readFromFile() throws SQLException, IOException {
 		
+		isJoin=false;
 		//separate flow for join
 		if(isJoin){
 			
