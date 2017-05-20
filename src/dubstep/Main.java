@@ -1558,16 +1558,22 @@ public class Main {
 
 			if (isJoin) {
 				
-				System.out.println("c :: " + c);
+				//System.out.println("c :: " + c);
 				String[] temp = c.toString().split("\\.");
 				String tbl = temp[0];
 				//System.out.println("tbl :: " + tbl);
 				
-				System.out.println("columnOrderMappingJoin :: " + columnOrderMappingJoin);
+				//System.out.println("columnOrderMappingJoin :: " + columnOrderMappingJoin);
+				int idx;
+				String ptype;
 				
-				int idx = columnOrderMappingJoin.get(c.toString());
-				String ptype = columnDataTypeMapping.get(c.toString());
-				
+				if(columnOrderMappingJoin != null){
+				 idx = columnOrderMappingJoin.get(c.toString());
+				 ptype = columnDataTypeMapping.get(c.toString());
+				}else{
+					idx = columnOrderMapping.get(c.toString());
+					ptype = columnDataTypeMapping.get(c.toString());
+				}
 				//System.out.println("values :: " + Arrays.toString(values));
 				//System.out.println("idx :: " + idx);
 				//System.out.println("idx :: " + idx);
