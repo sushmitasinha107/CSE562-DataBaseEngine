@@ -227,6 +227,9 @@ public class Main {
 			parser = new CCJSqlParser(input);
 
 			try {
+				
+				System.out.println("inputString :: " + inputString);
+				
 				query = parser.Statement();
 				long starttime = System.currentTimeMillis();
 				// create table query
