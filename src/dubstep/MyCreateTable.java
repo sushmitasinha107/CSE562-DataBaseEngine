@@ -45,7 +45,7 @@ public class MyCreateTable {
 		Main.primaryKeyList = new ArrayList<>();
 		Main.tableData =  new TableData();
 		Main.myTableName = Main.table.getTable().getName();
-		primaryKeyIndex = new HashMap<Long, String[]>();
+		Main.primaryKeyIndex = new HashMap<Long, String[]>();
 		Main.columnNames = Main.table.getColumnDefinitions();
 
 		int i = 0;
@@ -177,7 +177,7 @@ public class MyCreateTable {
 				    }
 
 				    //System.out.println("token::" + Arrays.toString(values));
-				    primaryKeyIndex.put(Long.parseLong(values[idx]), values);
+				    Main.primaryKeyIndex.put(Long.parseLong(values[idx]), values);
 				    
 				    
 				}
@@ -199,11 +199,11 @@ public class MyCreateTable {
 				    	i++;
 				    }
 					keyBuilder = values[idx1];
-					primaryKeyIndex.put(Long.parseLong(keyBuilder.concat(values[idx2])), values);
+					Main.primaryKeyIndex.put(Long.parseLong(keyBuilder.concat(values[idx2])), values);
 				}
 				
 			}
-			
+			Main.tableData.setPrimaryKeyIndex(Main.primaryKeyIndex);
 			tableDataJoin.setPrimaryKeyIndex(primaryKeyIndex);
 			//System.out.println("pk::" + Main.primaryKeyIndex);
 			
@@ -235,7 +235,7 @@ public class MyCreateTable {
 		List<Long> list = null;
 		int idx = -1;
 		int idpk = -1;
-		Iterator<Entry<Long, String[]>> it = primaryKeyIndex.entrySet().iterator();
+		Iterator<Entry<Long, String[]>> it = Main.primaryKeyIndex.entrySet().iterator();
 		//System.out.println("pkl::" + Main.primaryKeyIndex.entrySet());
 		
 		
@@ -311,14 +311,17 @@ public class MyCreateTable {
 			
 			primaryKeyIndex = new HashMap<Long, String[]>();
 			TableData td = new TableData();
+			
+			td = Main.tableMapping.get(Main.myTableName);
 
-			td.setTableName(Main.myTableName);
+			//td.setTableName(Main.myTableName);
 			if(!columnName.contains("."))
 			columnName = Main.myTableName +"."+ columnName;
 			 
 			 //System.out.println(columnName);
 			primaryKeyIndex = (HashMap<Long, String[]>) td.getPrimaryKeyIndex();
 
+			//System.out.println(primaryKeyIndex);
 			values = primaryKeyIndex.get(rowString);
 			idx = Main.columnOrderMapping.get(columnName);
 			String ptype = Main.columnDataTypeMapping.get(columnName);

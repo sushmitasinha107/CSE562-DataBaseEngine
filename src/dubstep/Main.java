@@ -1587,8 +1587,8 @@ public class Main {
 				
 
 			} else {
-				System.out.println("c :: " + c);
-				System.out.println("mytblname :: " + myTableName);
+				//System.out.println("c :: " + c);
+				//System.out.println("mytblname :: " + myTableName);
 				//if (c.toString().contains(myTableName)) {
 					Main.tableData = Main.tableMapping.get(myTableName);
 
@@ -1605,7 +1605,7 @@ public class Main {
 				String ptype = columnDataTypeMapping.get(c.toString());
 
 				// return getReturnType(ptype, values[idx]);
-				// System.out.println(ptype);
+				 //System.out.println(Arrays.toString(values));
 				return getReturnType(SQLDataType.valueOf(ptype), values[idx]);
 			}
 		}
