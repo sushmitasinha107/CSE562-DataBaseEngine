@@ -10,13 +10,16 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.StringTokenizer;
 import java.util.TreeMap;
-import java.util.HashMap;
+
 import net.sf.jsqlparser.expression.PrimitiveValue;
 import net.sf.jsqlparser.statement.create.table.ColumnDefinition;
 import net.sf.jsqlparser.statement.create.table.CreateTable;
@@ -28,17 +31,21 @@ public class MyCreateTable {
 	public static Index indexKey;
 	public static List<String> indexKeyList;
 	public static final String DELIM = "\\|";
-
+	public static List<String> primaryKeyList = new ArrayList<String>();
+	public static HashMap<Long, String[]> primaryKeyIndex = new HashMap<Long, String[]>();
+	public static TableData tableDataJoin = new TableData();
+	
 	public static void createTable() throws IOException {
-
+		
+		tableDataJoin = new TableData();
+		primaryKeyList = new ArrayList<String>();
 		Main.table = (CreateTable) Main.query;
 		List<Index> tableIndex = Main.table.getIndexes();
 		List<String> indexKeyList = new ArrayList<>();
 		Main.primaryKeyList = new ArrayList<>();
-		Main.primaryKeyIndex = new HashMap<Long, String[]>();
-
+		Main.tableData =  new TableData();
 		Main.myTableName = Main.table.getTable().getName();
-		Main.tableData = new TableData();
+		primaryKeyIndex = new HashMap<Long, String[]>();
 		Main.columnNames = Main.table.getColumnDefinitions();
 
 		int i = 0;
@@ -57,9 +64,12 @@ public class MyCreateTable {
 		}
 		Main.tableData.setColumnDataTypeMapping(Main.columnDataTypeMapping);
 		Main.tableData.setColumnOrderMapping(Main.columnOrderMapping);
-
 		Main.tableData.setPrimaryKeyList(Main.primaryKeyList);
-		Main.tableMapping.put(Main.myTableName, Main.tableData);
+		//for tablemappingjoin
+		tableDataJoin.setColumnDataTypeMapping(Main.columnDataTypeMapping);
+		tableDataJoin.setColumnOrderMapping(Main.columnOrderMapping);
+		tableDataJoin.setPrimaryKeyList(Main.primaryKeyList);
+		
 
 		if (tableIndex != null) {
 			for (Index indxValue : tableIndex) {
@@ -71,24 +81,24 @@ public class MyCreateTable {
 				else {
 					for (String pkCol : indxValue.getColumnsNames()) {
 						String pk = Main.myTableName + "." + pkCol;
-						Main.primaryKeyList.add(pk);
+						
+						primaryKeyList.add(pk);
 					}
 				}
 			}
 		}
 
-		//if (Main.inmem) {
-			makePrimaryMapping(Main.primaryKeyList);
+		if (Main.inmem) {
+			makePrimaryMapping(primaryKeyList);
 
-			for (String indexColumn : Main.primaryKeyList) {
-				sortMyTable(indexColumn, Main.primaryKeyList);
+			for (String indexColumn : primaryKeyList) {
+				sortMyTable(indexColumn, primaryKeyList);
 			}
 
 			for (String indexColumn : indexKeyList) {
-				sortMyTable(Main.myTableName + "." + indexColumn, Main.primaryKeyList);
+				sortMyTable(Main.myTableName + "." + indexColumn, primaryKeyList);
 			}
-		//}
-		/*
+		}
 		else{
 			
 			// onDisk sort
@@ -110,8 +120,12 @@ public class MyCreateTable {
 			
 			ExternalSort.onDiskSort(oIdx, "LINEITEM.QUANTITY");
 		}
-		*/
-
+		
+		
+		
+		Main.tableMapping.put(Main.myTableName, Main.tableData);
+		Main.tableMappingJoin.put(Main.myTableName, tableDataJoin);
+		
 		
 	}
 
@@ -125,16 +139,9 @@ public class MyCreateTable {
 	}
 	    
 	private static void makePrimaryMapping(List<String> primaryKeyList) throws IOException {
-
+		
+		System.out.println("primaryKeyList :"+primaryKeyList);
 		File file;
-//		if (System.getProperty("user.home").contains("deepti")) {
-//			System.out.println("localq");
-//			file = new File(Main.myTableName + ".csv");
-//		} else {
-//
-//			file = new File("data/" + Main.myTableName + ".csv");
-//		}
-
 		file = new File("data/" + Main.myTableName + ".csv");
 		//List<String> lines = Files.readAllLines(Paths.get(Main.myTableName + ".csv"), StandardCharsets.UTF_8);
 		
@@ -170,7 +177,7 @@ public class MyCreateTable {
 				    }
 
 				    //System.out.println("token::" + Arrays.toString(values));
-				    Main.primaryKeyIndex.put(Long.parseLong(values[idx]), values);
+				    primaryKeyIndex.put(Long.parseLong(values[idx]), values);
 				    
 				    
 				}
@@ -192,12 +199,12 @@ public class MyCreateTable {
 				    	i++;
 				    }
 					keyBuilder = values[idx1];
-					Main.primaryKeyIndex.put(Long.parseLong(keyBuilder.concat(values[idx2])), values);
+					primaryKeyIndex.put(Long.parseLong(keyBuilder.concat(values[idx2])), values);
 				}
 				
 			}
 			
-			
+			tableDataJoin.setPrimaryKeyIndex(primaryKeyIndex);
 			//System.out.println("pk::" + Main.primaryKeyIndex);
 			
 		} catch (IOException e) {
@@ -206,7 +213,7 @@ public class MyCreateTable {
 
 	}
 
-	public static void sortMyTable(String columnName, List<String> primaryKeyList) throws IOException {
+	public static void sortMyTable(String columnName, List<String> primaryKeyList ) throws IOException {
 		Map map = new TreeMap<>();
 		Long newRow;
 		String keyBuilder = "";
@@ -228,7 +235,7 @@ public class MyCreateTable {
 		List<Long> list = null;
 		int idx = -1;
 		int idpk = -1;
-		Iterator<Entry<Long, String[]>> it = Main.primaryKeyIndex.entrySet().iterator();
+		Iterator<Entry<Long, String[]>> it = primaryKeyIndex.entrySet().iterator();
 		//System.out.println("pkl::" + Main.primaryKeyIndex.entrySet());
 		
 		
@@ -246,8 +253,6 @@ public class MyCreateTable {
 
 			if (ptype1 == Main.SQLDataType.sqlint) {
 
-
-				//System.out.println("values[idx] ::" + values[idx]);
 				int key = Integer.parseInt(values[idx]);
 				if (map.containsKey(key)) {
 					list = (List<Long>) map.get(key);
@@ -303,8 +308,18 @@ public class MyCreateTable {
 		int idx = -1;
 		
 		for (Long rowString : PKList) {
+			
+			primaryKeyIndex = new HashMap<Long, String[]>();
+			TableData td = new TableData();
 
-			values = Main.primaryKeyIndex.get(rowString);
+			td.setTableName(Main.myTableName);
+			if(!columnName.contains("."))
+			columnName = Main.myTableName +"."+ columnName;
+			 
+			 //System.out.println(columnName);
+			primaryKeyIndex = (HashMap<Long, String[]>) td.getPrimaryKeyIndex();
+
+			values = primaryKeyIndex.get(rowString);
 			idx = Main.columnOrderMapping.get(columnName);
 			String ptype = Main.columnDataTypeMapping.get(columnName);
 			Main.SQLDataType ptype1 = Main.SQLDataType.valueOf(ptype);

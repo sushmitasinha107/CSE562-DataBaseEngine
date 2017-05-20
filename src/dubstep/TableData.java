@@ -7,8 +7,29 @@ public class TableData {
 	Map<String, Integer> columnOrderMapping;
 	Map<String, String> columnDataTypeMapping;
 	Map<String, Map> columnIndex;
+	Map<Long, String[]> primaryKeyIndex;
 	List<String> primaryKeyList;
+	String tableName;
+	
+	
 
+	
+	
+	public String getTableName() {
+		return tableName;
+	}
+
+	public void setTableName(String tableName) {
+		this.tableName = tableName;
+	}
+
+	public Map<Long, String[]> getPrimaryKeyIndex() {
+		return primaryKeyIndex;
+	}
+
+	public void setPrimaryKeyIndex(Map<Long, String[]> primaryKeyIndex) {
+		this.primaryKeyIndex = primaryKeyIndex;
+	}
 	public Map<String, Integer> getColumnOrderMapping() {
 		return columnOrderMapping;
 	}
