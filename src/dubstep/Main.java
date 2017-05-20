@@ -1567,7 +1567,7 @@ public class Main {
 				int idx;
 				String ptype;
 				
-				if(columnOrderMappingJoin != null){
+				if(columnOrderMappingJoin != null && c !=null){
 				 idx = columnOrderMappingJoin.get(c.toString());
 				 ptype = columnDataTypeMapping.get(c.toString());
 				}else{
