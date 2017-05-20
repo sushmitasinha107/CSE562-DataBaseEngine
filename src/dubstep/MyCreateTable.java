@@ -20,37 +20,48 @@ import java.util.Map.Entry;
 import java.util.StringTokenizer;
 import java.util.TreeMap;
 
+import net.sf.jsqlparser.expression.Expression;
 import net.sf.jsqlparser.expression.PrimitiveValue;
+import net.sf.jsqlparser.schema.Table;
+import net.sf.jsqlparser.statement.Statement;
 import net.sf.jsqlparser.statement.create.table.ColumnDefinition;
 import net.sf.jsqlparser.statement.create.table.CreateTable;
 import net.sf.jsqlparser.statement.create.table.Index;
+import net.sf.jsqlparser.statement.select.Join;
+import net.sf.jsqlparser.statement.select.PlainSelect;
+import net.sf.jsqlparser.statement.select.Select;
 
 public class MyCreateTable {
+	public static Map<Long, String[]> primaryKeyIndexCr = new HashMap<Long, String[]>();
+	public static TableData tableDataCr ;
+	public static TableData tableDataJoin ;
 
-	public static Index primaryKey;
-	public static Index indexKey;
-	public static List<String> indexKeyList;
+	public static Index primaryKeyCr;
+	public static Index indexKeyCr;
+	public static List<String> indexKeyListCr;
 	public static final String DELIM = "\\|";
-	public static List<String> primaryKeyList = new ArrayList<String>();
-	public static HashMap<Long, String[]> primaryKeyIndex = new HashMap<Long, String[]>();
-	public static TableData tableDataJoin = new TableData();
+	public static String myTableNameCr = "";
+	public static List<ColumnDefinition> columnNamesCr = null;
 	
-	public static void createTable() throws IOException {
-		
-		tableDataJoin = new TableData();
-		primaryKeyList = new ArrayList<String>();
-		Main.table = (CreateTable) Main.query;
-		List<Index> tableIndex = Main.table.getIndexes();
+	public static List<String> primaryKeyListCr = new ArrayList<>();
+	public static Map<String, Integer> columnOrderMappingCr = new HashMap<String, Integer>();
+	public static Map<String, String> columnDataTypeMappingCr = new HashMap<String, String>();
+
+	public static void createTable(Statement query) throws IOException {
+
+		CreateTable table = (CreateTable) query;
+		List<Index> tableIndex = table.getIndexes();
 		List<String> indexKeyList = new ArrayList<>();
-		Main.primaryKeyList = new ArrayList<>();
-		Main.tableData =  new TableData();
-		Main.myTableName = Main.table.getTable().getName();
-		Main.primaryKeyIndex = new HashMap<Long, String[]>();
-		Main.columnNames = Main.table.getColumnDefinitions();
+		primaryKeyListCr = new ArrayList<>();
+		primaryKeyIndexCr = new HashMap<Long, String[]>();
+		 myTableNameCr = table.getTable().getName();
+		tableDataCr = new TableData();
+		columnNamesCr = table.getColumnDefinitions();
 
 		int i = 0;
-		for (ColumnDefinition col : Main.columnNames) {
-			Main.columnOrderMapping.put(Main.myTableName + "." + col.getColumnName(), i);
+		for (ColumnDefinition col : columnNamesCr) {
+			columnOrderMappingCr.put(myTableNameCr + "." + col.getColumnName(), i);
+			Main.columnOrderMapping.put(myTableNameCr + "." + col.getColumnName(), i);
 
 			String dtype = col.getColDataType().getDataType();
 			if (dtype.equalsIgnoreCase("INT")) {
@@ -59,7 +70,8 @@ public class MyCreateTable {
 				dtype = "sqlchar";
 			}
 
-			Main.columnDataTypeMapping.put(Main.myTableName + "." + col.getColumnName(), dtype);
+			columnDataTypeMappingCr.put(myTableNameCr + "." + col.getColumnName(), dtype);
+			Main.columnDataTypeMapping.put(myTableNameCr + "." + col.getColumnName(), dtype);
 			i++;
 		}
 		Main.tableData.setColumnDataTypeMapping(Main.columnDataTypeMapping);
@@ -69,6 +81,7 @@ public class MyCreateTable {
 		tableDataJoin.setColumnDataTypeMapping(Main.columnDataTypeMapping);
 		tableDataJoin.setColumnOrderMapping(Main.columnOrderMapping);
 		tableDataJoin.setPrimaryKeyList(Main.primaryKeyList);
+
 		
 
 		if (tableIndex != null) {
@@ -80,23 +93,32 @@ public class MyCreateTable {
 
 				else {
 					for (String pkCol : indxValue.getColumnsNames()) {
-						String pk = Main.myTableName + "." + pkCol;
-						
-						primaryKeyList.add(pk);
+
+						String pk = myTableNameCr + "." + pkCol;
+						primaryKeyListCr.add(pk);
+
 					}
 				}
 			}
 		}
 
-		//if (Main.inmem) {
-			makePrimaryMapping(primaryKeyList);
 
-			for (String indexColumn : primaryKeyList) {
-				sortMyTable(indexColumn, primaryKeyList);
+		//if (Main.inmem) {
+			
+			makePrimaryMapping(primaryKeyListCr);
+
+			for (String indexColumn : primaryKeyListCr) {
+				sortMyTable(indexColumn, primaryKeyListCr);
 			}
 
 			for (String indexColumn : indexKeyList) {
-				sortMyTable(Main.myTableName + "." + indexColumn, primaryKeyList);
+				sortMyTable(myTableNameCr + "." + indexColumn, primaryKeyListCr);
+			}
+			
+			
+			if(myTableNameCr.equals("LINEITEM")){
+				sortMyTable("LINEITEM.RETURNFLAG" , primaryKeyListCr);
+				sortMyTable("LINEITEM.LINESTATUS" , primaryKeyListCr);
 			}
 		//}
 		/*else{
@@ -119,14 +141,26 @@ public class MyCreateTable {
 			//System.out.println("oIdx::" + oIdx);
 			
 			ExternalSort.onDiskSort(oIdx, "LINEITEM.QUANTITY");
+<<<<<<< HEAD
 		}*/
 		
 		
 		
-		Main.tableMapping.put(Main.myTableName, Main.tableData);
 		Main.tableMappingJoin.put(Main.myTableName, tableDataJoin);
 		
 		
+		//}
+		
+		tableDataCr.setColumnDataTypeMapping(columnDataTypeMappingCr);
+		tableDataCr.setColumnOrderMapping(columnOrderMappingCr);
+		
+		
+		tableDataCr.setTableName(myTableNameCr);
+		tableDataCr.setPrimaryKeyList(primaryKeyListCr);
+		
+		
+		
+		Main.tableMapping.put(myTableNameCr, tableDataCr);
 	}
 
 	private static String getNext(StringTokenizer st){  
@@ -140,9 +174,11 @@ public class MyCreateTable {
 	    
 	private static void makePrimaryMapping(List<String> primaryKeyList) throws IOException {
 		
-		System.out.println("primaryKeyList :"+primaryKeyList);
+
+
+		//System.out.println("primaryKeyList ::" + primaryKeyList);
 		File file;
-		file = new File("data/" + Main.myTableName + ".csv");
+		file = new File("data/" + myTableNameCr + ".csv");
 		//List<String> lines = Files.readAllLines(Paths.get(Main.myTableName + ".csv"), StandardCharsets.UTF_8);
 		
 		BufferedReader br = new BufferedReader(new FileReader(file));
@@ -177,14 +213,17 @@ public class MyCreateTable {
 				    }
 
 				    //System.out.println("token::" + Arrays.toString(values));
-				    Main.primaryKeyIndex.put(Long.parseLong(values[idx]), values);
+				    primaryKeyIndexCr.put(Long.parseLong(values[idx]), values);
 				    
 				    
 				}
 				
 			}else{
-				idx1 = Main.columnOrderMapping.get(primaryKeyList.get(0));
-				idx2 = Main.columnOrderMapping.get(primaryKeyList.get(1));
+				
+				
+				
+				idx1 = columnOrderMappingCr.get(primaryKeyList.get(0));
+				idx2 = columnOrderMappingCr.get(primaryKeyList.get(1));
 				
 				
 				while ((newRow = br.readLine()) != null) {
@@ -199,14 +238,15 @@ public class MyCreateTable {
 				    	i++;
 				    }
 					keyBuilder = values[idx1];
-					Main.primaryKeyIndex.put(Long.parseLong(keyBuilder.concat(values[idx2])), values);
+					primaryKeyIndexCr.put(Long.parseLong(keyBuilder.concat(values[idx2])), values);
 				}
 				
 			}
-			Main.tableData.setPrimaryKeyIndex(Main.primaryKeyIndex);
-			tableDataJoin.setPrimaryKeyIndex(primaryKeyIndex);
+			tableDataJoin.setPrimaryKeyIndex(primaryKeyIndexCr);
 			//System.out.println("pk::" + Main.primaryKeyIndex);
-			
+									
+			//System.out.println("pk::" + Main.primaryKeyIndex);
+			tableDataCr.setPrimaryKeyIndex(primaryKeyIndexCr);
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -217,35 +257,20 @@ public class MyCreateTable {
 		Map map = new TreeMap<>();
 		Long newRow;
 		String keyBuilder = "";
-
-		/*
-		File file;
-		if (System.getProperty("user.home").contains("deepti")) {
-			System.out.println("local");
-			file = new File(Main.myTableName + ".csv");
-		} else {
-
-			file = new File("data/" + Main.myTableName + ".csv");
-		}
-
-		BufferedReader br = new BufferedReader(new FileReader(file));
-		*/
 		
 		String values[] = null;
 		List<Long> list = null;
 		int idx = -1;
 		int idpk = -1;
-		Iterator<Entry<Long, String[]>> it = Main.primaryKeyIndex.entrySet().iterator();
+		
+		Iterator<Entry<Long, String[]>> it = primaryKeyIndexCr.entrySet().iterator();
 		//System.out.println("pkl::" + Main.primaryKeyIndex.entrySet());
 		
-		
-		
-		idx = Main.columnOrderMapping.get(columnName);
-		String ptype = Main.columnDataTypeMapping.get(columnName);
+		idx = columnOrderMappingCr.get(columnName);
+		String ptype = columnDataTypeMappingCr.get(columnName);
 		Main.SQLDataType ptype1 = Main.SQLDataType.valueOf(ptype);
 		
 		while (it.hasNext()) {
-			
 			Entry<Long, String[]> e = it.next();
 			values = e.getValue();
 			newRow = e.getKey();
@@ -293,9 +318,6 @@ public class MyCreateTable {
 
 		}
 		Main.columnIndex.put(columnName, map);
-		
-		//System.out.println("colIdx:" + Main.columnIndex);
-
 	}
 
 	public static List<Long> sortOnIndex2(String columnName, List<Long> PKList) throws IOException {
@@ -309,7 +331,7 @@ public class MyCreateTable {
 		
 		for (Long rowString : PKList) {
 			
-			primaryKeyIndex = new HashMap<Long, String[]>();
+			primaryKeyIndexCr = new HashMap<Long, String[]>();
 			TableData td = new TableData();
 			
 			td = Main.tableMapping.get(Main.myTableName);
@@ -319,10 +341,20 @@ public class MyCreateTable {
 			columnName = Main.myTableName +"."+ columnName;
 			 
 			 //System.out.println(columnName);
-			primaryKeyIndex = (HashMap<Long, String[]>) td.getPrimaryKeyIndex();
 
-			//System.out.println(primaryKeyIndex);
-			values = primaryKeyIndex.get(rowString);
+			primaryKeyIndexCr = new HashMap<Long, String[]>();
+			
+						
+			if(!columnName.contains(".")){
+				
+				columnName =  Main.myTableName +"."+ columnName;
+			
+			}
+			 
+			 //System.out.println(columnName);
+			primaryKeyIndexCr = td.getPrimaryKeyIndex();
+			values = primaryKeyIndexCr.get(rowString);
+
 			idx = Main.columnOrderMapping.get(columnName);
 			String ptype = Main.columnDataTypeMapping.get(columnName);
 			Main.SQLDataType ptype1 = Main.SQLDataType.valueOf(ptype);
@@ -358,8 +390,6 @@ public class MyCreateTable {
 					map.put(key, list);
 				} else {
 					list = new ArrayList<Long>();
-					
-					
 					list.add(rowString);
 					map.put(key, list);
 				}
@@ -373,5 +403,6 @@ public class MyCreateTable {
 			}
 		}
 		return PKListSorted;
-	}
+	}	
+	
 }

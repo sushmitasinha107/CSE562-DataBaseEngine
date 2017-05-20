@@ -123,11 +123,11 @@ public class ProcessQueries {
 		Main.select = (Select) query;
 		Main.plainSelect = (PlainSelect) Main.select.getSelectBody();
 
-		//Main.myTableName = Main.plainSelect.getFromItem().toString();
-		Main.tableData = Main.tableMapping.get(tblName);
-
-		Main.columnOrderMapping = Main.tableData.getColumnOrderMapping();
-		Main.columnDataTypeMapping = Main.tableData.getColumnDataTypeMapping();
+//		Main.myTableName = Main.plainSelect.getFromItem().toString();
+//		Main.columnOrderMapping = Main.getColumnOrderMapping();
+//		Main.columnDataTypeMapping = Main.tableData.getColumnDataTypeMapping();
+//		
+		
 
 		getSelectItemsList();
 

@@ -4,17 +4,13 @@ import java.util.Map;
 
 public class TableData {
 
+	String tableName;
 	Map<String, Integer> columnOrderMapping;
 	Map<String, String> columnDataTypeMapping;
 	Map<String, Map> columnIndex;
 	Map<Long, String[]> primaryKeyIndex;
 	List<String> primaryKeyList;
-	String tableName;
-	
-	
 
-	
-	
 	public String getTableName() {
 		return tableName;
 	}
@@ -61,6 +57,9 @@ public class TableData {
 	public void setPrimaryKeyList(List<String> primaryKeyList) {
 		this.primaryKeyList = primaryKeyList;
 	}
+
+	
+	
 
 	
 

@@ -69,6 +69,8 @@ public class Main {
 
 	public static Main mainObj = new Main();
 	public static TableData tableData = null;
+	
+	
 
 	public static Map<String, TableData> tableMapping = new HashMap<String, TableData>();
 	
@@ -144,7 +146,8 @@ public class Main {
 
 	public static boolean isDone = false;
 	public static boolean stop = false;
-
+	public static boolean isJoin = false;
+	
 	public static boolean inmem = false;
 
 	public static boolean groupByOperator = false;
@@ -152,7 +155,6 @@ public class Main {
 	public static List<String> outputDataOD = new ArrayList<>();
 
 	public static List<Join> joinTables = new ArrayList<>();
-	public static Boolean isJoin = false;
 	public static String tbl1, tbl2;
 	public static String[] values2 = null;
 	public static ArrayList<String> joinOnClause = new ArrayList<>();
@@ -208,10 +210,13 @@ public class Main {
 		/*
 		 * keep reading from the grader
 		 */
-		while ((inputString = br.readLine()) != null) {
+		String inputStr = "";
+		while ((inputStr = br.readLine()) != null) {
 
-			// inputString = inputString.toUpperCase();
-			inputString = inputString.toUpperCase();
+			
+			inputString = inputStr.toUpperCase();
+			
+			
 
 			StringBuilder inputStringBuilder = new StringBuilder();
 			inputStringBuilder.append(inputString);
@@ -219,7 +224,7 @@ public class Main {
 			while (inputString.contains(";") == false && (inputString = br.readLine()) != null) {
 				inputStringBuilder.append(" ");
 				inputStringBuilder.append(inputString);
-				inputString = inputStringBuilder.toString();
+				inputString = inputStringBuilder.toString().toUpperCase();
 			}
 
 			input = new StringReader(inputString);
@@ -234,9 +239,10 @@ public class Main {
 				long starttime = System.currentTimeMillis();
 				// create table query
 				if (query instanceof CreateTable) {
+					values = null;
 
 					ct = new MyCreateTable();
-					ct.createTable();
+					ct.createTable(query);
 
 					long endtime = System.currentTimeMillis();
 					System.out.println("time taken::" + (endtime - starttime));
@@ -244,6 +250,9 @@ public class Main {
 
 				} else if (query instanceof Select) { // select queries
 
+					
+					
+					
 					reinitializeValues();
 
 					count = 0;
@@ -268,9 +277,14 @@ public class Main {
 					select = (Select) query;
 					plainSelect = (PlainSelect) select.getSelectBody();
 
+					myTableName = plainSelect.getFromItem().toString();
+					tableData = tableMapping.get(Main.myTableName);
+
 					// orderByElementsList = plainSelect.getOrderByElements();
 					groupByElementsList = plainSelect.getGroupByColumnReferences();
-
+					
+					
+					
 					if (groupByElementsList != null) {
 						groupByOperator = true;
 					}
@@ -292,6 +306,7 @@ public class Main {
 							}
 						}
 
+						
 						orderOperator = true; /*
 												 * tells us from where to read
 												 * the data::file or map
@@ -301,6 +316,22 @@ public class Main {
 					if (plainSelect.getLimit() != null) {
 						limit = plainSelect.getLimit().getRowCount();
 					}
+					
+					//System.out.println("plainSelect.getJoins()"+plainSelect.getJoins()); 
+					/*TableData tableData1 = Main.tableMapping.get( plainSelect.getJoins().get(0).toString());
+					
+					tableData1.setTableName(plainSelect.getJoins().get(0).toString());
+					
+					//extractCond(plainSelect.getWhere());
+					//System.out.println(extractAllExp(plainSelect.getWhere()));
+					ArrayList<String> arrayList = evaluateJoinCondition(tableData, tableData1, plainSelect.getWhere());
+					System.out.println("evaluateJoinCondition"+arrayList);
+					*/
+					
+
+//					if(plainSelect.getJoins().size()>0)
+//						isJoin=true;
+//					
 					// System.out.println("limit: " + limit);
 
 					/*
@@ -361,8 +392,14 @@ public class Main {
 								tempList.add(newpk);
 							}
 
+							
+							//HashSet<Expression> hashSetJoin = new HashSet<Expression>();
+							//ArrayList<String> arrayList = evaluateJoinCondition(myTableName, plainSelect.getJoins().get(0), plainSelect.getWhere());
+
+						
 							TableData td = new TableData();
 
+							td.setTableName(myTableName);
 							td.setColumnDataTypeMapping(tempMap);
 							td.setColumnOrderMapping(tempMap2);
 							td.setPrimaryKeyList(tempList);
@@ -371,11 +408,11 @@ public class Main {
 
 							pq.populateInnerSelectStatements((SubSelect) plainSelect.getFromItem());
 
-							pq.processInnermostSelect(alias);
+							pq.processInnermostSelect(alias );
 
 						} else {
 							pq.populateInnerSelectStatements((SubSelect) plainSelect.getFromItem());
-							pq.processInnermostSelect(myTableName);
+							pq.processInnermostSelect(myTableName );
 						}
 					}
 
@@ -383,6 +420,8 @@ public class Main {
 					// " + groupByOperator);
 
 					if (inmem == false && orderOperator == true && groupByOperator == true) {
+						//order by second column
+						
 						TreeMap<String, List<String>> outputDataODMap = new TreeMap<>();
 						List<String> list = new ArrayList<String>();
 						for (String rowVal : outputDataOD) {
@@ -428,61 +467,6 @@ public class Main {
 		}
 
 	}
-	
-	public static HashSet<Expression> extractAllExp(Expression expression) {
-		HashSet<Expression> hashSet = new HashSet<Expression>();
-
-		Expression leftVal = null;
-		Expression rightVal = null;
-
-		if (expression instanceof AndExpression) {
-			AndExpression mte = (AndExpression) expression;
-			leftVal = ((Expression) mte.getLeftExpression());
-			rightVal = ((Expression) mte.getRightExpression());
-
-			if (leftVal instanceof AndExpression || leftVal instanceof OrExpression) {
-				HashSet<Expression> array = extractAllExp(leftVal);
-				for (Expression s : array) {
-					hashSet.add(s);
-				}
-				hashSet.add(rightVal);
-			} else {
-
-				// if (leftVal instanceof EqualsTo) {
-				hashSet.add(leftVal);
-				// }
-				// if (rightVal instanceof EqualsTo) {
-				hashSet.add(rightVal);
-				// }
-			}
-
-		} else if (expression instanceof OrExpression) {
-			OrExpression mte = (OrExpression) expression;
-			leftVal = ((Expression) mte.getLeftExpression());
-			rightVal = ((Expression) mte.getRightExpression());
-			
-
-			if (leftVal instanceof AndExpression || leftVal instanceof OrExpression) {
-				HashSet<Expression> array = extractAllExp(leftVal);
-				for (Expression s : array) {
-					hashSet.add(s);
-				}
-				hashSet.add(rightVal);
-			} else {
-				// if (leftVal instanceof EqualsTo) {
-				hashSet.add(leftVal);
-				// }
-				// if (rightVal instanceof EqualsTo) {
-				hashSet.add(rightVal);
-				// }
-			}
-
-		} else {
-			hashSet.add(expression);
-		}
-		return hashSet;
-	}
-
 
 	public static ArrayList<String> evaluateJoinCondition(Expression expression) {
 
@@ -515,16 +499,7 @@ public class Main {
 	}
 
 
-	public static HashSet<String> extractCond(Expression expression) {
-		// System.out.println(expression.toString()+"\n\n");
-		HashSet<String> hashSet = new HashSet<String>();
-		HashSet<Expression> hashExpSet = extractAllExp(expression);
-		for (Expression exp : hashExpSet) {
-			hashSet.add(exp.toString());
-		}
-		//System.out.println(hashSet);
-		return hashSet;
-	}
+	
 
 	public static void reinitializeValues() {
 		avgCount = 0;
@@ -820,11 +795,12 @@ public class Main {
 			// start of in-mem
 			if (inmem) {
 				TreeMap orderIndexMap = new TreeMap<>();
+				primaryKeyIndex = tableData.getPrimaryKeyIndex();
 				//System.out.println(firstOrderOperator);
 				String[] temp12 = firstOrderOperator.split("\\.");
-				//System.out.println(Arrays.toString(temp12));
-				
 				String searchOnIndex = (temp12.length == 1) ? temp12[0]:temp12[1];
+				
+				//System.out.println(Arrays.toString(temp12));
 				
 				boolean m = false;
 				
@@ -1028,14 +1004,6 @@ public class Main {
 		/* where clause evaluation */
 		if (!(e == null)) {
 			
-//			if(e.toString().contains("LINEITEM.QUANTITY")){
-//				int ii = columnOrderMapping.get("LINEITEM.QUANTITY");
-//				if(Integer.parseInt(values[ii]) > 26){
-//					stop = true;
-//				}
-//			}
-
-			//System.out.println("e :: " + e);
 			if (eval.eval(e).toBool()) {
 				if (numAggFunc > 0) {
 					computeAggregate();
@@ -1559,58 +1527,59 @@ public class Main {
 
 	public static Eval eval = new Eval() {
 		public PrimitiveValue eval(Column c) {
-
 			isJoin = false;
-			if (isJoin) {
-				
-				//System.out.println("c :: " + c);
-				String[] temp = c.toString().split("\\.");
-				String tbl = temp[0];
-				//System.out.println("tbl :: " + tbl);
-				
-				//System.out.println("columnOrderMappingJoin :: " + columnOrderMappingJoin);
-				int idx;
-				String ptype;
-				
-				if(columnOrderMappingJoin != null && c !=null){
-				 idx = columnOrderMappingJoin.get(c.toString());
-				 ptype = columnDataTypeMapping.get(c.toString());
-				}else{
-					idx = columnOrderMapping.get(c.toString());
-					ptype = columnDataTypeMapping.get(c.toString());
-				}
-				//System.out.println("values :: " + Arrays.toString(values));
-				//System.out.println("idx :: " + idx);
-				//System.out.println("idx :: " + idx);
-				
-				return getReturnType(SQLDataType.valueOf(ptype), values[idx]);
-				
-				
+if (isJoin) {
 
-			} else {
-				//System.out.println("c :: " + c);
-				//System.out.println("mytblname :: " + myTableName);
-				//if (c.toString().contains(myTableName)) {
-					Main.tableData = Main.tableMapping.get(myTableName);
+//System.out.println("c :: " + c);
+String[] temp = c.toString().split("\\.");
+String tbl = temp[0];
+//System.out.println("tbl :: " + tbl);
 
-					Main.columnOrderMapping = Main.tableData.getColumnOrderMapping();
-					Main.columnDataTypeMapping = Main.tableData.getColumnDataTypeMapping();
-				/*} else {
-					Main.tableData = Main.tableMapping.get(alias);
+//System.out.println("columnOrderMappingJoin :: " + columnOrderMappingJoin);
+int idx;
+String ptype;
 
-					Main.columnOrderMapping = Main.tableData.getColumnOrderMapping();
-					Main.columnDataTypeMapping = Main.tableData.getColumnDataTypeMapping();
-				}*/
+if(columnOrderMappingJoin != null && c !=null){
+ idx = columnOrderMappingJoin.get(c.toString());
+ ptype = columnDataTypeMapping.get(c.toString());
+}else{
+idx = columnOrderMapping.get(c.toString());
+ptype = columnDataTypeMapping.get(c.toString());
+}
+//System.out.println("values :: " + Arrays.toString(values));
+//System.out.println("idx :: " + idx);
+//System.out.println("idx :: " + idx);
 
-				int idx = columnOrderMapping.get(c.toString());
-				String ptype = columnDataTypeMapping.get(c.toString());
+return getReturnType(SQLDataType.valueOf(ptype), values[idx]);
 
-				// return getReturnType(ptype, values[idx]);
-				 //System.out.println(Arrays.toString(values));
-				return getReturnType(SQLDataType.valueOf(ptype), values[idx]);
-			}
+
+
+} else {
+//System.out.println("c :: " + c);
+//System.out.println("mytblname :: " + myTableName);
+//if (c.toString().contains(myTableName)) {
+Main.tableData = Main.tableMapping.get(myTableName);
+
+Main.columnOrderMapping = Main.tableData.getColumnOrderMapping();
+Main.columnDataTypeMapping = Main.tableData.getColumnDataTypeMapping();
+/*} else {
+Main.tableData = Main.tableMapping.get(alias);
+
+Main.columnOrderMapping = Main.tableData.getColumnOrderMapping();
+Main.columnDataTypeMapping = Main.tableData.getColumnDataTypeMapping();
+}*/
+
+int idx = columnOrderMapping.get(c.toString());
+String ptype = columnDataTypeMapping.get(c.toString());
+
+// return getReturnType(ptype, values[idx]);
+ //System.out.println(Arrays.toString(values));
+return getReturnType(SQLDataType.valueOf(ptype), values[idx]);
+}	
 		}
 	};
+	
+
 	static PrimitiveValue expResult = null;
 	
 
@@ -1618,5 +1587,105 @@ public class Main {
 		expResult = eval.eval(aggExpr);
 		return expResult;
 	}
+	
+	public static HashSet<Expression> extractAllExp(Expression expression){
+		HashSet<Expression> hashSet = new HashSet<Expression>();
+		
+		Expression leftVal = null;
+		Expression rightVal = null;
 
+		if (expression instanceof AndExpression) {
+			AndExpression mte = (AndExpression) expression;
+			leftVal = ((Expression) mte.getLeftExpression());
+			rightVal = ((Expression) mte.getRightExpression());
+
+			if (leftVal instanceof AndExpression || leftVal instanceof OrExpression) {
+				HashSet<Expression> array = extractAllExp(leftVal);
+				for (Expression s : array) {
+					hashSet.add(s);
+				}
+				hashSet.add(rightVal);
+			} else {
+				
+				//if (leftVal instanceof EqualsTo) {
+				hashSet.add(leftVal);
+				//}
+				//if (rightVal instanceof EqualsTo) {
+				hashSet.add(rightVal);
+				//}
+			}
+
+		} else if (expression instanceof OrExpression) {
+			OrExpression mte = (OrExpression) expression;
+			leftVal = ((Expression) mte.getLeftExpression());
+			rightVal = ((Expression) mte.getRightExpression());;
+
+			if (leftVal instanceof AndExpression || leftVal instanceof OrExpression) {
+				HashSet<Expression> array = extractAllExp(leftVal);
+				for (Expression s : array) {
+					hashSet.add(s);
+				}
+				hashSet.add(rightVal);
+			} else {
+				//if (leftVal instanceof EqualsTo) {
+				hashSet.add(leftVal);
+				//}
+				//if (rightVal instanceof EqualsTo) {
+				hashSet.add(rightVal);
+				//}
+			}
+
+		}
+		else {
+			hashSet.add(expression);
+		}
+		return hashSet;
+	}
+	
+	
+	public static ArrayList<String> evaluateJoinCondition (TableData table1,TableData table2,Expression expression)
+	{
+		ArrayList<String> arrayList = new ArrayList<String>();
+
+		HashSet<String> set = extractCond(expression);
+		
+		for(String s: set)
+		{
+			String[] strArr=null;
+			if(s.contains("="))
+			{
+				System.out.println("one expr "+s);
+				String joincols[] = s.split("=");
+				
+				System.out.println(Arrays.toString(joincols));
+				String col1 = joincols[0];
+				String col2 = joincols[1];
+				col1 = col1.trim();
+				col2 = col2.trim();
+				System.out.println("col1:"+col1 + "col2"+col2);
+				System.out.println(columnOrderMapping);
+				if(columnOrderMapping.containsKey(col1) && columnOrderMapping.containsKey(col2) ){
+					arrayList.add(s);
+					
+					
+				}
+			}
+		}
+		
+		System.out.println(arrayList);
+
+		return arrayList;
+	}
+	
+	
+	public static  HashSet<String> extractCond(Expression expression) {
+//		System.out.println(expression.toString()+"\n\n");
+		HashSet<String> hashSet = new HashSet<String>();
+		HashSet<Expression> hashExpSet = extractAllExp(expression);
+		for(Expression exp:hashExpSet){
+			hashSet.add(exp.toString());
+		}
+		System.out.println(hashSet);
+		return hashSet;
+	}
 }
