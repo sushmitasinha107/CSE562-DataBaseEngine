@@ -1589,17 +1589,17 @@ public class Main {
 			} else {
 				System.out.println("c :: " + c);
 				System.out.println("mytblname :: " + myTableName);
-				if (c.toString().contains(myTableName)) {
+				//if (c.toString().contains(myTableName)) {
 					Main.tableData = Main.tableMapping.get(myTableName);
 
 					Main.columnOrderMapping = Main.tableData.getColumnOrderMapping();
 					Main.columnDataTypeMapping = Main.tableData.getColumnDataTypeMapping();
-				} else {
+				/*} else {
 					Main.tableData = Main.tableMapping.get(alias);
 
 					Main.columnOrderMapping = Main.tableData.getColumnOrderMapping();
 					Main.columnDataTypeMapping = Main.tableData.getColumnDataTypeMapping();
-				}
+				}*/
 
 				int idx = columnOrderMapping.get(c.toString());
 				String ptype = columnDataTypeMapping.get(c.toString());
