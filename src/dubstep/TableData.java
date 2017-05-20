@@ -4,10 +4,28 @@ import java.util.Map;
 
 public class TableData {
 
+	String tableName;
+	public String getTableName() {
+		return tableName;
+	}
+
+	public void setTableName(String tableName) {
+		this.tableName = tableName;
+	}
+
 	Map<String, Integer> columnOrderMapping;
 	Map<String, String> columnDataTypeMapping;
 	Map<String, Map> columnIndex;
 	List<String> primaryKeyList;
+	Map<Long, String[]> primaryKeyIndex;
+
+	public Map<Long, String[]> getPrimaryKeyIndex() {
+		return primaryKeyIndex;
+	}
+
+	public void setPrimaryKeyIndex(Map<Long, String[]> primaryKeyIndex) {
+		this.primaryKeyIndex = primaryKeyIndex;
+	}
 
 	public Map<String, Integer> getColumnOrderMapping() {
 		return columnOrderMapping;
@@ -40,6 +58,9 @@ public class TableData {
 	public void setPrimaryKeyList(List<String> primaryKeyList) {
 		this.primaryKeyList = primaryKeyList;
 	}
+
+	
+	
 
 	
 
