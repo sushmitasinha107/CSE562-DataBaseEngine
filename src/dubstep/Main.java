@@ -1556,6 +1556,7 @@ public class Main {
 	public static Eval eval = new Eval() {
 		public PrimitiveValue eval(Column c) {
 
+			isJoin = false;
 			if (isJoin) {
 				
 				//System.out.println("c :: " + c);
