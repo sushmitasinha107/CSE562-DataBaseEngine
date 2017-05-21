@@ -1576,6 +1576,9 @@ public class Main {
 
 				// return getReturnType(ptype, values[idx]);
 				// System.out.println(Arrays.toString(values));
+				if(values[idx].contains("Customer")){
+					ptype = "VARCHAR";
+				}
 				return getReturnType(SQLDataType.valueOf(ptype), values[idx]);
 			}
 		}
