@@ -803,8 +803,9 @@ public class Main {
 
 					boolean m = false;
 
+					
 					for (Entry<String, Map> ci : columnIndex.entrySet()) {
-						if (ci.getKey().contains(searchOnIndex)) {
+						if (ci.getKey().contains(firstOrderOperator)) {
 							// System.out.println("index present");
 							orderIndexMap = (TreeMap) ci.getValue();
 							m = true;
