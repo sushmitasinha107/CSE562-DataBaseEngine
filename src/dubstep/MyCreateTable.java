@@ -274,7 +274,11 @@ public class MyCreateTable {
 			String strName = columnName.split("\\.")[0];
 			TableData temp = new TableData();
 			temp = Main.tableMapping.get(strName.trim());
+			if(temp != null){
 			primaryKeyIndexCr = temp.getPrimaryKeyIndex();
+			}else{
+				primaryKeyIndexCr = Main.primaryKeyIndex;
+			}
 		}
 		Iterator<Entry<Long, String[]>> it = primaryKeyIndexCr.entrySet().iterator();
 		//System.out.println("pkl::" + Main.primaryKeyIndex.entrySet());
