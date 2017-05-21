@@ -738,7 +738,7 @@ public class Main {
 		/*
 		 * read from the file directly, as no order by clause is present
 		 */
-			orderOperator = true;
+			orderOperator = false;
 		if (orderOperator == false) {
 
 			File file;
