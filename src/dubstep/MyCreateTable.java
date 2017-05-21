@@ -262,6 +262,7 @@ public class MyCreateTable {
 	}
 
 	public static void sortMyTable(String columnName, List<String> primaryKeyList, Boolean fly) throws IOException {
+		columnName = columnName.trim();
 		Map map = new TreeMap<>();
 		Long newRow;
 		String keyBuilder = "";
