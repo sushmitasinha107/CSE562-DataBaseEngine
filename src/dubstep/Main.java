@@ -805,7 +805,7 @@ public class Main {
 				boolean m = false;
 				
 				for(Entry<String, Map> ci : columnIndex.entrySet()){
-					if(ci.getKey().contains(searchOnIndex)){
+					if(ci.getKey().contains(searchOnIndex.trim())){
 						//System.out.println("index present");
 						orderIndexMap = (TreeMap) ci.getValue();
 						m = true;
@@ -816,7 +816,7 @@ public class Main {
 				if(m == false){
 					// if index not built on order by column, build it on the
 					// fly
-					MyCreateTable.sortMyTable(firstOrderOperator, tableData.getPrimaryKeyList());
+					MyCreateTable.sortMyTable(firstOrderOperator, tableData.getPrimaryKeyList(), true);
 					orderIndexMap = (TreeMap) columnIndex.get(firstOrderOperator);
 				}
 
