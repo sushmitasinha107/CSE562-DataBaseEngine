@@ -125,8 +125,8 @@ public class MyCreateTable {
 			
 			
 			if(myTableNameCr.equals("LINEITEM")){
-				sortMyTable("LINEITEM.RETURNFLAG" , primaryKeyListCr, false);
-				sortMyTable("LINEITEM.LINESTATUS" , primaryKeyListCr, false);
+				//sortMyTable("LINEITEM.RETURNFLAG" , primaryKeyListCr, false);
+				//sortMyTable("LINEITEM.LINESTATUS" , primaryKeyListCr, false);
 			}
 		//}
 		/*else{
@@ -272,7 +272,9 @@ public class MyCreateTable {
 		int idpk = -1;
 		if(fly == true){
 			String strName = columnName.split("\\.")[0];
-			primaryKeyIndexCr = Main.tableMapping.get(strName.trim()).getPrimaryKeyIndex();
+			TableData temp = new TableData();
+			temp = Main.tableMapping.get(strName.trim());
+			primaryKeyIndexCr = temp.getPrimaryKeyIndex();
 		}
 		Iterator<Entry<Long, String[]>> it = primaryKeyIndexCr.entrySet().iterator();
 		//System.out.println("pkl::" + Main.primaryKeyIndex.entrySet());
