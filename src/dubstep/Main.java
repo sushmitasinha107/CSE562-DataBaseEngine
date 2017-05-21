@@ -1554,9 +1554,6 @@ public class Main {
 				return getReturnType(SQLDataType.valueOf(ptype), values[idx]);
 
 			} else {
-				//System.out.println("c :: " + c);
-				//System.out.println("columnOrderMapping :"+ columnOrderMapping);
-				//System.out.println(Arrays.toString(values));
 				// System.out.println("c :: " + c);
 				// System.out.println("mytblname :: " + myTableName);
 				// if (c.toString().contains(myTableName)) {
