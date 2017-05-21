@@ -54,14 +54,19 @@ public class MyCreateTable {
 		List<String> indexKeyList = new ArrayList<>();
 		primaryKeyListCr = new ArrayList<>();
 		primaryKeyIndexCr = new HashMap<Long, String[]>();
-		 myTableNameCr = table.getTable().getName();
+		myTableNameCr = table.getTable().getName();
 		tableDataCr = new TableData();
+		tableDataJoin = new TableData();
 		columnNamesCr = table.getColumnDefinitions();
 
 		int i = 0;
 		for (ColumnDefinition col : columnNamesCr) {
 			columnOrderMappingCr.put(myTableNameCr + "." + col.getColumnName(), i);
+			columnOrderMappingCr.put(col.getColumnName(), i);
+
+			
 			Main.columnOrderMapping.put(myTableNameCr + "." + col.getColumnName(), i);
+			Main.columnOrderMapping.put(col.getColumnName(), i);
 
 			String dtype = col.getColDataType().getDataType();
 			if (dtype.equalsIgnoreCase("INT")) {
@@ -71,13 +76,16 @@ public class MyCreateTable {
 			}
 
 			columnDataTypeMappingCr.put(myTableNameCr + "." + col.getColumnName(), dtype);
+			columnDataTypeMappingCr.put(col.getColumnName(), dtype);
+
 			Main.columnDataTypeMapping.put(myTableNameCr + "." + col.getColumnName(), dtype);
+			Main.columnDataTypeMapping.put(col.getColumnName(), dtype);
+
+			
 			i++;
 		}
-		Main.tableData.setColumnDataTypeMapping(Main.columnDataTypeMapping);
-		Main.tableData.setColumnOrderMapping(Main.columnOrderMapping);
-		Main.tableData.setPrimaryKeyList(Main.primaryKeyList);
-		//for tablemappingjoin
+				//for tablemappingjoin
+		System.out.println(Main.columnDataTypeMapping);
 		tableDataJoin.setColumnDataTypeMapping(Main.columnDataTypeMapping);
 		tableDataJoin.setColumnOrderMapping(Main.columnOrderMapping);
 		tableDataJoin.setPrimaryKeyList(Main.primaryKeyList);
@@ -94,8 +102,8 @@ public class MyCreateTable {
 				else {
 					for (String pkCol : indxValue.getColumnsNames()) {
 
-						String pk = myTableNameCr + "." + pkCol;
-						primaryKeyListCr.add(pk);
+						//String pk = myTableNameCr + "." + pkCol;
+						primaryKeyListCr.add(pkCol);
 
 					}
 				}
@@ -112,14 +120,15 @@ public class MyCreateTable {
 			}
 
 			for (String indexColumn : indexKeyList) {
-				sortMyTable(myTableNameCr + "." + indexColumn, primaryKeyListCr);
+				//sortMyTable(myTableNameCr + "." + indexColumn, primaryKeyListCr);
+				sortMyTable(indexColumn, primaryKeyListCr);
 			}
 			
-			
-			if(myTableNameCr.equals("LINEITEM")){
-				sortMyTable("LINEITEM.RETURNFLAG" , primaryKeyListCr);
-				sortMyTable("LINEITEM.LINESTATUS" , primaryKeyListCr);
-			}
+//			
+//			if(myTableNameCr.equals("LINEITEM")){
+//				sortMyTable("RETURNFLAG" , primaryKeyListCr);
+//				sortMyTable("LINESTATUS" , primaryKeyListCr);
+//			}
 		//}
 		/*else{
 			

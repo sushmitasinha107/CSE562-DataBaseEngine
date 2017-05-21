@@ -58,9 +58,5 @@ public class TableData {
 		this.primaryKeyList = primaryKeyList;
 	}
 
-	
-	
-
-	
 
 }
