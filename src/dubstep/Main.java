@@ -816,7 +816,7 @@ public class Main {
 						// if index not built on order by column, build it on
 						// the
 						// fly
-						MyCreateTable.sortMyTable(firstOrderOperator, tableData.getPrimaryKeyList());
+						MyCreateTable.sortMyTable(firstOrderOperator, tableData.getPrimaryKeyList(), true);
 						orderIndexMap = (TreeMap) columnIndex.get(firstOrderOperator);
 					}
 

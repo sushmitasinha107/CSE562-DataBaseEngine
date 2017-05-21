@@ -115,18 +115,18 @@ public class MyCreateTable {
 			makePrimaryMapping(primaryKeyListCr);
 
 			for (String indexColumn : primaryKeyListCr) {
-				sortMyTable(indexColumn, primaryKeyListCr);
+				sortMyTable(indexColumn, primaryKeyListCr, false);
 			}
 
 			for (String indexColumn : indexKeyList) {
-				sortMyTable(myTableNameCr + "." + indexColumn, primaryKeyListCr);
+				sortMyTable(myTableNameCr + "." + indexColumn, primaryKeyListCr, false);
 				//sortMyTable(indexColumn, primaryKeyListCr);
 			}
 			
 			
 			if(myTableNameCr.equals("LINEITEM")){
-				sortMyTable("LINEITEM.RETURNFLAG" , primaryKeyListCr);
-				sortMyTable("LINEITEM.LINESTATUS" , primaryKeyListCr);
+				sortMyTable("LINEITEM.RETURNFLAG" , primaryKeyListCr, false);
+				sortMyTable("LINEITEM.LINESTATUS" , primaryKeyListCr, false);
 			}
 		//}
 		/*else{
@@ -261,7 +261,7 @@ public class MyCreateTable {
 
 	}
 
-	public static void sortMyTable(String columnName, List<String> primaryKeyList ) throws IOException {
+	public static void sortMyTable(String columnName, List<String> primaryKeyList, Boolean fly) throws IOException {
 		Map map = new TreeMap<>();
 		Long newRow;
 		String keyBuilder = "";
@@ -270,12 +270,15 @@ public class MyCreateTable {
 		List<Long> list = null;
 		int idx = -1;
 		int idpk = -1;
-		
+		if(fly == true){
+			String strName = columnName.split("\\.")[0];
+			primaryKeyIndexCr = Main.tableMapping.get(strName.trim()).getPrimaryKeyIndex();
+		}
 		Iterator<Entry<Long, String[]>> it = primaryKeyIndexCr.entrySet().iterator();
 		//System.out.println("pkl::" + Main.primaryKeyIndex.entrySet());
 		
-		idx = columnOrderMappingCr.get(columnName);
-		String ptype = columnDataTypeMappingCr.get(columnName);
+		idx = Main.columnOrderMapping.get(columnName);
+		String ptype = Main.columnDataTypeMapping.get(columnName);
 		Main.SQLDataType ptype1 = Main.SQLDataType.valueOf(ptype);
 		
 		while (it.hasNext()) {
