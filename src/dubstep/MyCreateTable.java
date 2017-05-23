@@ -84,11 +84,14 @@ public class MyCreateTable {
 			
 			i++;
 		}
+		
+		System.out.println("columnDataTypeMapping :: " + Main.columnDataTypeMapping);
 				//for tablemappingjoin
 		tableDataJoin.setColumnDataTypeMapping(Main.columnDataTypeMapping);
 		tableDataJoin.setColumnOrderMapping(Main.columnOrderMapping);
 		tableDataJoin.setPrimaryKeyList(Main.primaryKeyList);
 
+		tableDataJoin.setTableName(myTableNameCr);
 		
 
 		if (tableIndex != null) {
@@ -154,7 +157,7 @@ public class MyCreateTable {
 		
 		
 		
-		Main.tableMappingJoin.put(Main.myTableName, tableDataJoin);
+		Main.tableMappingJoin.put(myTableNameCr, tableDataJoin);
 		
 		
 		//}
@@ -245,7 +248,7 @@ public class MyCreateTable {
 				    	//System.out.println(i + "\t" + values[i]);
 				    	i++;
 				    }
-					keyBuilder = values[idx1];
+					keyBuilder = values[idx1] + "000";
 					primaryKeyIndexCr.put(Long.parseLong(keyBuilder.concat(values[idx2])), values);
 				}
 				
@@ -271,15 +274,15 @@ public class MyCreateTable {
 		List<Long> list = null;
 		int idx = -1;
 		int idpk = -1;
+		System.out.println("tableMapping :: " + Main.tableMapping);
+		System.out.println("columnName :: " + columnName);
 		if(fly == true){
 			String strName = columnName.split("\\.")[0];
+			System.out.println("strName :: " + strName);
 			TableData temp = new TableData();
 			temp = Main.tableMapping.get(strName.trim());
-			if(temp != null){
 			primaryKeyIndexCr = temp.getPrimaryKeyIndex();
-			}else{
-				primaryKeyIndexCr = Main.primaryKeyIndex;
-			}
+			
 		}
 		Iterator<Entry<Long, String[]>> it = primaryKeyIndexCr.entrySet().iterator();
 		//System.out.println("pkl::" + Main.primaryKeyIndex.entrySet());
@@ -336,6 +339,8 @@ public class MyCreateTable {
 
 		}
 		Main.columnIndex.put(columnName, map);
+		//System.out.println("map :: " + map);
+		//System.out.println("colIdx :: " + Main.columnIndex);
 	}
 
 	public static List<Long> sortOnIndex2(String columnName, List<Long> PKList) throws IOException {
