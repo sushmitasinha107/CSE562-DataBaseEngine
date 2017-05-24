@@ -72,6 +72,8 @@ public class Main {
 
 	public static Map<String, TableData> tableMapping = new HashMap<String, TableData>();
 
+	public static Map<String, Integer> colMap = new HashMap<String, Integer>();
+	
 	public static Map<String, Integer> columnOrderMapping = new HashMap<String, Integer>();
 	public static Map<String, String> columnDataTypeMapping = new HashMap<String, String>();
 	public static Map<String, Map> columnIndex = new HashMap<String, Map>();
@@ -258,6 +260,7 @@ public class Main {
 
 					innerSelects = new ArrayList<>(); // stores nested select
 														// statements
+					//columnOrderMapping = new HashMap<>();
 					columnOrderMappingJoin = new HashMap<>();
 
 					pq = new ProcessQueries();
@@ -464,20 +467,20 @@ public class Main {
 
 		ArrayList<String> arrayList = new ArrayList<String>();
 
-		HashSet<String> set = extractCond(expression);
-		 System.out.println("extr all conditions:" + set);
+		ArrayList<String> set = extractCond(expression);
+		 //System.out.println("extr all conditions:" + set);
 		for (String s : set) {
 			String[] strArr = null;
 			if (s.contains("=")) {
-				 System.out.println("one expr " + s);
+				 //System.out.println("one expr " + s);
 				String joincols[] = s.split("=");
 
-				 System.out.println(Arrays.toString(joincols));
+				 //System.out.println(Arrays.toString(joincols));
 				String col1 = joincols[0];
 				String col2 = joincols[1];
 				col1 = col1.trim();
 				col2 = col2.trim();
-				 System.out.println("evaluateJoinCondition : columnOrderMapping: "+ columnOrderMapping);
+				 //System.out.println("evaluateJoinCondition : columnOrderMapping: "+ columnOrderMapping);
 				if (columnOrderMapping.containsKey(col1) && columnOrderMapping.containsKey(col2)) {
 					arrayList.add(s);
 					
@@ -538,6 +541,7 @@ public class Main {
 			// System.out.println("tbl1 :: " + tbl1);
 			// System.out.println("tbl2 :: " + tbl2);
 
+			columnOrderMappingJoin = new HashMap<>();
 			getColumnOrderMappingForJoin(tbl1, tbl2, false);
 
 			// System.out.println("columnOrderMappingJoin :: " +
@@ -561,8 +565,6 @@ public class Main {
 			while ((row = br.readLine()) != null) {
 
 				orderIndexTbl2 = new TreeMap<>();
-				// -------change the get field
-				// value-------------------------------
 				orderIndexTbl2 = (TreeMap) columnIndex.get(base[1].trim());
 
 				joinedTables = new ArrayList<>();
@@ -573,11 +575,8 @@ public class Main {
 				tbl2 = tt2;
 
 				String[] valuesTemp = row.split("\\|");
+				String[] base1 = row.split("\\|");
 				String key = valuesTemp[idx];
-				// String res = null;
-
-				// System.out.println("-----1-------key :: " + key);
-				// System.out.println("treemap :: " + orderIndexTbl2);
 
 				if (orderIndexTbl2.containsKey(Integer.parseInt(key))) {
 					ArrayList<Long> pks = new ArrayList<>();
@@ -632,10 +631,6 @@ public class Main {
 
 							}
 							
-							if(values[0].equals("896")){
-								System.out.println("896 :: " + Arrays.toString(values));
-							}
-
 							// check for more join conditions
 
 							if (joinOnClause.size() <= 1) {
@@ -659,33 +654,35 @@ public class Main {
 								// System.out.println("more join :: " + tbl1 +
 								// "\t" + tbl2);
 
-								if (allOrder == false) {
+								//if (allOrder == false) {
 									if (joinedTables.contains(tbl1) && !joinedTables.contains(tbl2)) {
-										getColumnOrderMappingForJoin(tbl1, tbl2, true);
+										if(allOrder == false){
+											getColumnOrderMappingForJoin(tbl1, tbl2, true);
+										}
 										joinedTables.add(tbl2);
 										newTbl = temp[1];
 										keyCol = temp[0].trim();
 									} else if (joinedTables.contains(tbl2) && !joinedTables.contains(tbl1)) {
-										getColumnOrderMappingForJoin(tbl2, tbl1, true);
+										if(allOrder == false){
+											getColumnOrderMappingForJoin(tbl2, tbl1, true);
+										}
 										joinedTables.add(tbl1);
 										newTbl = temp[0];
 										keyCol = temp[1].trim();
 									}
-								}
+								//}
 
-								 System.out.println("newTbl :: " + newTbl);
+								 //System.out.println("newTbl :: " + newTbl);
 
 								// get hashmap of the new table
 								orderIndexTbl2 = new TreeMap<>();
 								orderIndexTbl2 = (TreeMap) columnIndex.get(newTbl.trim());
-								// System.out.println("columnOrderMappingJoin ::
-								// " + columnOrderMappingJoin);
-								// System.out.println("keyCol :: " + keyCol);
-								// System.out.println("values :: " +
-								// Arrays.toString(values));
+								 /*System.out.println("columnOrderMappingJoin ::" + columnOrderMappingJoin);
+								 System.out.println("keyCol :: " + keyCol);
+								 System.out.println("values :: " + Arrays.toString(values));*/
 
 								key = values[columnOrderMappingJoin.get(keyCol)];
-								// System.out.println("-------2 key :: " + key);
+								 //System.out.println("-------2 key :: " + key);
 								if (orderIndexTbl2.containsKey(Integer.parseInt(key))) {
 
 									ArrayList<Long> pks2 = new ArrayList<>();
@@ -730,10 +727,7 @@ public class Main {
 											values[x++] = list.get(t);
 
 										}
-										if(values[0].equals("896")){
-											System.out.println("896 :: " + Arrays.toString(values));
-										}
-
+										System.out.println();
 									}
 
 								}
@@ -970,15 +964,18 @@ public class Main {
 
 		for (Entry<String, Integer> c : columnOrderMapping.entrySet()) {
 
+			String[] temp = c.toString().split("\\.");
+			String ttbl = temp[0].trim();
+			
 			if (isOld == false) {
-				if (c.getKey().contains(tbl1)) {
+				if (ttbl.equals(tbl1)) {
 					columnOrderMappingJoin.put(c.getKey(), c.getValue());
 				} else if (c.getKey().contains(tbl2)) {
 					columnOrderMappingJoin.put(c.getKey(), c.getValue() + s);
 				}
 			} else {
 
-				if (c.getKey().contains(tbl2)) {
+				if (ttbl.equals(tbl2)) {
 					columnOrderMappingJoin.put(c.getKey(), c.getValue() + s);
 				}
 
@@ -986,7 +983,7 @@ public class Main {
 
 		}
 
-		System.out.println("1....columnOrderMappingJoin :: " + columnOrderMappingJoin);
+		//System.out.println("1....columnOrderMappingJoin :: " + columnOrderMappingJoin);
 	}
 
 	private static void processReadFromFileForJoin(String newRow1, String newRow2)
@@ -1208,18 +1205,22 @@ public class Main {
 		print = false;
 		aggPrint = true;
 
+		
+
 		if (isJoin) {
-			columnOrderMapping = columnOrderMappingJoin;
+			colMap = columnOrderMappingJoin;
+		}else{
+			colMap = columnOrderMapping;
 		}
 		if (groupByElementsList != null) {
 
 			String key = "";
 			if (groupByElementsList.size() == 1) {
-				int idx = columnOrderMapping.get(groupByElementsList.get(0).toString());
+				int idx = colMap.get(groupByElementsList.get(0).toString());
 				key = values[idx];
 			} else {
 				for (int i = 0; i < groupByElementsList.size(); i++) {
-					int idx = columnOrderMapping.get(groupByElementsList.get(i).toString());
+					int idx = colMap.get(groupByElementsList.get(i).toString());
 					key = key + ":" + values[idx];
 				}
 			}
@@ -1491,8 +1492,12 @@ public class Main {
 			}
 		} else {
 
+			
+
 			if (isJoin) {
-				columnOrderMapping = columnOrderMappingJoin;
+				colMap = columnOrderMappingJoin;
+			}else{
+				colMap = columnOrderMapping;
 			}
 			sbuilder = new StringBuilder();
 			for (int i = 0; i < selCols; i++) {
@@ -1504,7 +1509,7 @@ public class Main {
 					Eval eval = new Eval() {
 						public PrimitiveValue eval(Column c) {
 
-							int idx = columnOrderMapping.get(c.toString());
+							int idx = colMap.get(c.toString());
 							String ptype = columnDataTypeMapping.get(c.toString());
 							return getReturnType(SQLDataType.valueOf(ptype), values[idx]);
 						}
@@ -1516,7 +1521,7 @@ public class Main {
 					}
 
 				} else {
-					int idx = columnOrderMapping.get(sitem.toString());
+					int idx = colMap.get(sitem.toString());
 					if (values[idx] != null) {
 						sbuilder.append(values[idx]);
 					}
@@ -1568,8 +1573,7 @@ public class Main {
 				String tbl = temp[0];
 				// System.out.println("tbl :: " + tbl);
 
-				 System.out.println("columnOrderMappingJoin :: " +
-				 columnOrderMappingJoin);
+				// System.out.println("columnOrderMappingJoin :: " +columnOrderMappingJoin);
 				int idx;
 				String ptype;
 
@@ -1621,8 +1625,8 @@ public class Main {
 		return expResult;
 	}
 
-	public static HashSet<Expression> extractAllExp(Expression expression) {
-		HashSet<Expression> hashSet = new HashSet<Expression>();
+	public static ArrayList<Expression> extractAllExp(Expression expression) {
+		ArrayList<Expression> hashSet = new ArrayList<Expression>();
 
 		Expression leftVal = null;
 		Expression rightVal = null;
@@ -1633,7 +1637,7 @@ public class Main {
 			rightVal = ((Expression) mte.getRightExpression());
 
 			if (leftVal instanceof AndExpression || leftVal instanceof OrExpression) {
-				HashSet<Expression> array = extractAllExp(leftVal);
+				ArrayList<Expression> array = extractAllExp(leftVal);
 				for (Expression s : array) {
 					hashSet.add(s);
 				}
@@ -1655,7 +1659,7 @@ public class Main {
 			;
 
 			if (leftVal instanceof AndExpression || leftVal instanceof OrExpression) {
-				HashSet<Expression> array = extractAllExp(leftVal);
+				ArrayList<Expression> array = extractAllExp(leftVal);
 				for (Expression s : array) {
 					hashSet.add(s);
 				}
@@ -1678,7 +1682,7 @@ public class Main {
 	public static ArrayList<String> evaluateJoinCondition(TableData table1, TableData table2, Expression expression) {
 		ArrayList<String> arrayList = new ArrayList<String>();
 
-		HashSet<String> set = extractCond(expression);
+		ArrayList<String> set = extractCond(expression);
 
 		for (String s : set) {
 			String[] strArr = null;
@@ -1705,10 +1709,10 @@ public class Main {
 		return arrayList;
 	}
 
-	public static HashSet<String> extractCond(Expression expression) {
+	public static ArrayList<String> extractCond(Expression expression) {
 		// System.out.println(expression.toString()+"\n\n");
-		HashSet<String> hashSet = new HashSet<String>();
-		HashSet<Expression> hashExpSet = extractAllExp(expression);
+		ArrayList<String> hashSet = new ArrayList<String>();
+		ArrayList<Expression> hashExpSet = extractAllExp(expression);
 		for (Expression exp : hashExpSet) {
 			hashSet.add(exp.toString());
 		}
